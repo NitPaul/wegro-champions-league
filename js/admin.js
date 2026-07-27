@@ -7,7 +7,19 @@
    PERMISSION_DENIED on every write.
    ========================================================================== */
 
-import { subscribe, writeMany, replaceAll, onAuth, signIn, signOutAdmin, isDemo, friendlyError } from "./backend.js";
+import {
+  subscribe,
+  writeMany,
+  replaceAll,
+  onAuth,
+  signInDemo,
+  signInWithGoogle,
+  signOutAdmin,
+  isDemo,
+  isAdmin,
+  needsUidSetup,
+  friendlyError,
+} from "./backend.js";
 import { $, $$, setHTML, show, wireTabs, rememberTab, toast, confirmPhrase } from "./ui.js";
 import { renderAuction } from "./auction.js";
 import * as D from "./data.js";
@@ -23,47 +35,90 @@ let matchSig = "";
 let settingsPainted = false;
 
 show($("#demoBanner"), isDemo);
+
+// Demo mode has no Firebase project, so Google sign-in cannot work — fall back
+// to the passphrase instead.
+show($("#googleBtn"), !isDemo);
+show($("#demoField"), isDemo);
+show($("#loginBtn"), isDemo);
 if (isDemo) {
-  show($("#emailField"), false);
-  $("#email").required = false;
   $("#loginNote").textContent =
-    "Demo mode — sign in with the passphrase from js/config.js. Nothing here is secure until Firebase is configured.";
+    "Demo mode — enter the passphrase from js/config.js. Nothing here is secure until Firebase is configured.";
 }
 
 /* -------------------------------------------------------------------- auth */
 
 onAuth((user) => {
-  signedIn = Boolean(user);
-  show($("#loginView"), !signedIn);
+  const allowed = isAdmin(user);
+  signedIn = Boolean(user) && allowed;
+
+  show($("#loginView"), !user);
+  show($("#denyView"), Boolean(user) && !allowed);
   show($("#adminView"), signedIn);
-  if (user) {
-    $("#whoami").textContent = user.email || "Signed in";
-    render();
+
+  if (!signedIn) {
+    if (user) $("#denyEmail").textContent = user.email || user.uid;
+    return;
+  }
+
+  $("#whoami").textContent = user.email || "Signed in";
+
+  // First run: surface the UID so it can be pasted into config and rules.
+  show($("#uidSetup"), needsUidSetup());
+  if (needsUidSetup()) $("#uidValue").textContent = user.uid;
+
+  render();
+});
+
+const loginError = (ex) => {
+  const err = $("#loginErr");
+  err.textContent = friendlyError(ex);
+  show(err, true);
+};
+
+$("#googleBtn").addEventListener("click", async () => {
+  const btn = $("#googleBtn");
+  show($("#loginErr"), false);
+  btn.disabled = true;
+  try {
+    await signInWithGoogle();
+  } catch (ex) {
+    loginError(ex);
+  } finally {
+    btn.disabled = false;
   }
 });
 
 $("#loginForm").addEventListener("submit", async (ev) => {
   ev.preventDefault();
+  if (!isDemo) return;
   const btn = $("#loginBtn");
-  const err = $("#loginErr");
-  show(err, false);
+  show($("#loginErr"), false);
   btn.disabled = true;
-  btn.textContent = "Signing in…";
   try {
-    await signIn($("#email").value.trim(), $("#password").value);
+    await signInDemo($("#password").value);
     $("#password").value = "";
   } catch (ex) {
-    err.textContent = friendlyError(ex);
-    show(err, true);
+    loginError(ex);
   } finally {
     btn.disabled = false;
-    btn.textContent = "Sign in";
   }
 });
 
-$("#signOut").addEventListener("click", async () => {
-  await signOutAdmin();
-  toast("Signed out.");
+for (const id of ["#signOut", "#denySignOut"]) {
+  $(id).addEventListener("click", async () => {
+    await signOutAdmin();
+    toast("Signed out.");
+  });
+}
+
+$("#copyUid").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText($("#uidValue").textContent);
+    toast("UID copied.");
+  } catch {
+    toast("Copy failed — select the UID and copy it manually.", "err");
+  }
 });
 
 /* -------------------------------------------------------------------- data */

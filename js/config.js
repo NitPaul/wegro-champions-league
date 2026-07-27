@@ -21,6 +21,18 @@ export const firebaseConfig = {
   appId: "",
 };
 
+/**
+ * The Google account(s) allowed to open the admin panel.
+ *
+ * Leave this EMPTY the first time. Sign in with Google once and the panel shows
+ * you your own UID with a copy button — paste it here and into
+ * `database.rules.json`, then redeploy.
+ *
+ * This list controls the admin *screen*. What actually protects the data is the
+ * matching UID in the database rules, which Google's servers enforce.
+ */
+export const ADMIN_UIDS = [];
+
 /** Where the tournament lives in the database. Change the season to run 2027. */
 export const DB_PATH = "wegro/cl2026";
 

@@ -45,6 +45,50 @@
 .login-back {
   font-size: 13px;
 }
+.google-btn {
+  background: #fff;
+  color: #1f1f1f;
+  border-color: #fff;
+  font-weight: 600;
+  gap: 10px;
+}
+.google-btn:hover:not(:disabled) {
+  background: #f1f1f1;
+}
+.deny-mark {
+  font-size: 34px;
+  line-height: 1;
+}
+
+/* ---- First-run UID setup -------------------------------------------------- */
+.setup-card {
+  border-color: rgba(232, 195, 92, 0.42);
+  background: linear-gradient(180deg, rgba(232, 195, 92, 0.08), transparent);
+  margin-bottom: var(--gap);
+}
+.setup-card code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+.uid-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.uid-row code {
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 9px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+  border: 1px solid var(--line-strong);
+}
 
 .admin-main {
   padding-top: 6px;

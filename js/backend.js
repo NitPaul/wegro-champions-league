@@ -24,7 +24,7 @@
      currentUser()             -> user|null
    ========================================================================== */
 
-import { firebaseConfig, DB_PATH, DEMO_PASSPHRASE } from "./config.js";
+import { firebaseConfig, DB_PATH, DEMO_PASSPHRASE, ADMIN_UIDS } from "./config.js";
 
 const SDK = "https://www.gstatic.com/firebasejs/10.12.5";
 
@@ -188,21 +188,45 @@ export function onAuth(cb) {
   };
 }
 
-export async function signIn(email, password) {
-  if (isDemo) {
-    if (password !== DEMO_PASSPHRASE) {
-      const e = new Error("Wrong demo passphrase.");
-      e.code = "auth/wrong-password";
-      throw e;
-    }
-    localStorage.setItem(LS_AUTH, "1");
-    demoAuthListeners.forEach((cb) => cb(demoUser()));
-    return demoUser();
+/** Demo mode only — a passphrase so you can explore before Firebase exists. */
+export async function signInDemo(passphrase) {
+  if (passphrase !== DEMO_PASSPHRASE) {
+    const e = new Error("Wrong demo passphrase.");
+    e.code = "auth/wrong-password";
+    throw e;
   }
-  const { auth, signInWithEmailAndPassword } = await initFirebase();
-  const cred = await signInWithEmailAndPassword(auth, email, password);
+  localStorage.setItem(LS_AUTH, "1");
+  demoAuthListeners.forEach((cb) => cb(demoUser()));
+  return demoUser();
+}
+
+/** The real sign-in. Google handles the credential; we never see a password. */
+export async function signInWithGoogle() {
+  const { auth, GoogleAuthProvider, signInWithPopup } = await initFirebase();
+  const provider = new GoogleAuthProvider();
+  // Always ask which account, so a shared laptop can't silently reuse the last one.
+  provider.setCustomParameters({ prompt: "select_account" });
+  const cred = await signInWithPopup(auth, provider);
   return cred.user;
 }
+
+/**
+ * Is this the tournament admin?
+ *
+ * Bootstrap case: with ADMIN_UIDS still empty we let a signed-in user through so
+ * the panel can show them their own UID — there is no other way to discover it.
+ * Nothing is at risk, because every write is still checked against the database
+ * rules on Google's servers, not here.
+ */
+export function isAdmin(user) {
+  if (!user) return false;
+  if (isDemo) return true;
+  if (!ADMIN_UIDS.length) return true;
+  return ADMIN_UIDS.includes(user.uid);
+}
+
+/** True while ADMIN_UIDS has not been filled in yet. */
+export const needsUidSetup = () => !isDemo && !ADMIN_UIDS.length;
 
 export async function signOutAdmin() {
   if (isDemo) {
@@ -233,7 +257,17 @@ export function friendlyError(err) {
   if (code.includes("api-key-not-valid") || code.includes("invalid-api-key"))
     return "The Firebase apiKey in js/config.js is not valid — re-copy it from the Firebase console.";
   if (code.includes("configuration-not-found") || code.includes("operation-not-allowed"))
-    return "Email/Password sign-in is not enabled for this Firebase project. Turn it on under Authentication → Sign-in method.";
+    return "Google sign-in is not enabled for this Firebase project. Turn it on under Authentication → Sign-in method.";
+  // The one that only shows up in production: Firebase allows localhost by
+  // default but not your Netlify domain until you add it.
+  if (code.includes("unauthorized-domain"))
+    return `This site's address is not on the Firebase allow-list. Add "${
+      globalThis.location?.hostname ?? "this domain"
+    }" under Authentication → Settings → Authorized domains.`;
+  if (code.includes("popup-blocked"))
+    return "Your browser blocked the Google sign-in popup. Allow popups for this site and try again.";
+  if (code.includes("popup-closed-by-user") || code.includes("cancelled-popup-request"))
+    return "Sign-in was cancelled.";
   if (String(err?.message || "").includes("PERMISSION_DENIED"))
     return "Permission denied — this account is not the tournament admin.";
   return err?.message || "Something went wrong.";

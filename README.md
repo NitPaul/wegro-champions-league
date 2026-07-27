@@ -50,18 +50,20 @@ setup below to make it live for everyone.
 
 This is what makes scores live for everyone and makes the admin login real.
 
+Sign-in is **Google**, so there is no admin password to set, leak or forget, and it inherits
+whatever two-factor auth is already on your Google account.
+
 1. Go to <https://console.firebase.google.com> and sign in with your WeGro Google account.
 2. **Add project** → name it `wegro-champions-league` → you can turn Google Analytics off →
    **Create project**.
-3. On the project home page click the **web icon `</>`** → app nickname `wegro-cl` → **Register app**.
-   Firebase shows you a `firebaseConfig` block. Leave that tab open.
-4. Left sidebar → **Build → Realtime Database** → **Create Database** →
+3. Left sidebar → **Build → Realtime Database** → **Create Database** →
    choose the **Singapore (asia-southeast1)** location → start in **locked mode** → **Enable**.
-5. Left sidebar → **Build → Authentication** → **Get started** → **Email/Password** → enable the
-   first toggle → **Save**.
-6. Still in Authentication → **Users** tab → **Add user**. Enter the admin email and a strong
-   password. **This is the only account that will ever be able to change the tournament.**
-7. Copy the **User UID** from that row (a long string like `k3Jf9...`). You need it in step 3.
+   *(Do this before step 5 — otherwise Firebase leaves `databaseURL` out of the config snippet.)*
+4. Left sidebar → **Build → Authentication** → **Get started** → **Google** → enable it, pick a
+   support email → **Save**. Do **not** also enable Email/Password: two sign-in methods means two
+   different UIDs, and the security rule pins exactly one.
+5. Back to **Project Overview** → click the **web icon `</>`** → nickname `wegro-cl` → leave
+   "Also set up Firebase Hosting" unchecked → **Register app**. Copy the `firebaseConfig` block.
 
 ### Step 2 — paste the config
 
@@ -88,11 +90,22 @@ The orange demo banner disappears as soon as this is filled in.
 > safe in a public repo — Google publishes these in their own documentation. What protects your
 > data is the security rule in the next step.
 
-### Step 3 — lock the database
+### Step 3 — find your UID, then lock everything to it
 
-In the Firebase console: **Realtime Database → Rules**. Replace everything with the contents of
-**`database.rules.json`** from this folder, and swap `PASTE_YOUR_ADMIN_UID_HERE` for the UID you
-copied in step 1.7. Press **Publish**.
+You cannot know your Google UID until you have signed in once, so the panel tells you.
+
+1. Open `admin.html` and press **Sign in with Google**.
+2. A gold **"One step left — lock this panel"** card appears at the top with your UID and a
+   **Copy** button.
+3. Paste that UID into **two** places:
+   - `js/config.js` → `ADMIN_UIDS = ["your-uid-here"]`
+   - `database.rules.json` → replace `PASTE_YOUR_ADMIN_UID_HERE`
+4. In the Firebase console: **Realtime Database → Rules** → paste the whole contents of
+   `database.rules.json` → **Publish**.
+5. Redeploy (`git push`). The gold card disappears — the panel is now locked to you alone.
+
+Until step 3 is done, any Google account can *open* the admin screen, but every change it tries
+to save is rejected by the database. After step 3 they don't even get the screen.
 
 That rule says: *anyone may read, only this one account may write.* It is enforced by Google's
 servers, so it holds even if someone opens devtools and calls the database directly.
@@ -110,9 +123,8 @@ not publish — go back and fix that before match day.
 
 ### Step 4 — load the tournament
 
-Open `admin.html`, sign in with the email and password from step 1.6, and press
-**Load tournament**. That writes the four teams, the 24-player auction pool, the six round-robin
-fixtures and the Final.
+Open `admin.html`, sign in with Google, and press **Load tournament**. That writes the four
+teams, the 24-player auction pool, the six round-robin fixtures and the Final.
 
 ---
 
@@ -124,6 +136,16 @@ Done, you get a URL immediately.
 **The maintainable way** — push the folder to GitHub, then in Netlify:
 **Add new site → Import an existing project** → pick the repo →
 build command **empty**, publish directory **`.`** → **Deploy**.
+
+### ⚠ Then allow-list the domain, or Google sign-in breaks in production
+
+Firebase trusts `localhost` out of the box but **not** your Netlify address. Until you add it,
+sign-in works locally and fails on the live site.
+
+Firebase console → **Authentication → Settings → Authorized domains → Add domain** →
+`wegro-champions-league.netlify.app` (and your custom domain, if you add one).
+
+If you skip it, the login screen says so in plain English rather than failing silently.
 
 Then **Site configuration → Change site name** to something like `wegro-champions-league`, giving
 you `https://wegro-champions-league.netlify.app`. Add a custom domain under
@@ -284,9 +306,12 @@ Work down this list once. Everything above the line must be done **before the au
 
 **Before 28 July, 12:00 PM — the auction**
 
-- [ ] Firebase project created, Realtime Database enabled, Email/Password turned on
-- [ ] The single admin user created; its **UID** pasted into the database rules and published
+- [ ] Firebase project created, Realtime Database enabled, **Google** sign-in turned on
 - [ ] `js/config.js` filled in — the orange demo banner is **gone** on both pages
+- [ ] Signed in once, UID pasted into `ADMIN_UIDS` **and** `database.rules.json`, rules published
+- [ ] The gold "one step left" card is gone from the admin panel
+- [ ] Netlify domain added under **Authentication → Settings → Authorized domains**
+- [ ] Signed out and tried the admin page in a private window — you get the login screen
 - [ ] The `Permission denied` test in Step 3 actually returns a denial
 - [ ] Signed in as admin and pressed **Load tournament**
 - [ ] Fixtures on the public site match the deck (M4 A–D, M5 B–D, M6 B–C)
@@ -310,8 +335,18 @@ Work down this list once. Everything above the line must be done **before the au
 ## Troubleshooting
 
 **"Permission denied" when I save as admin.** The UID in your database rules doesn't match the
-account you signed in with. Firebase console → Authentication → Users → copy the UID → paste into
-the rules → Publish.
+Google account you signed in with. Firebase console → Authentication → Users → copy the UID →
+paste it into `database.rules.json` → Publish. It must also be in `ADMIN_UIDS`.
+
+**Google sign-in works locally but not on the live site.** The Netlify domain isn't on the
+Firebase allow-list — see the ⚠ box in Step 5.
+
+**"This browser blocked the popup."** Allow popups for the site, or sign in from a normal window
+rather than an incognito one with strict blocking.
+
+**A colleague can open the admin panel.** `ADMIN_UIDS` in `js/config.js` is still empty, so the
+panel is in bootstrap mode. Their changes are still rejected by the database — but finish Step 3
+to take the screen away too.
 
 **The page is blank and the console says "Failed to resolve module".** You opened `index.html`
 directly from disk. Serve it over HTTP (`python -m http.server 8080`).

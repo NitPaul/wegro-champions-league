@@ -20,26 +20,50 @@
 
     <!-- ============================================================ LOGIN -->
     <section class="login-view" id="loginView" hidden>
-      <form class="card login-card" id="loginForm" autocomplete="on">
+      <form class="card login-card" id="loginForm">
         <img class="login-crest" src="assets/crest.png" alt="" width="639" height="639" />
         <h1 class="login-title">Tournament Admin</h1>
         <p class="faint login-note" id="loginNote">
           Only the tournament admin can sign in. Everyone else sees the public site.
         </p>
 
-        <div class="field" id="emailField">
-          <label for="email">Email</label>
-          <input class="input" type="email" id="email" autocomplete="username" placeholder="admin@wegro.global" />
+        <!-- Real mode: Google handles the credential, we never see a password. -->
+        <button class="btn btn--block google-btn" type="button" id="googleBtn">
+          <svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+          </svg>
+          Sign in with Google
+        </button>
+
+        <!-- Demo mode only: no Firebase project yet. -->
+        <div class="field" id="demoField" hidden>
+          <label for="password">Demo passphrase</label>
+          <input class="input" type="password" id="password" autocomplete="current-password" />
         </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input class="input" type="password" id="password" autocomplete="current-password" required />
-        </div>
+        <button class="btn btn--primary btn--block" type="submit" id="loginBtn" hidden>
+          Enter demo
+        </button>
 
         <p class="login-err" id="loginErr" hidden></p>
-        <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Sign in</button>
         <a class="faint login-back" href="index.html">← Back to the public site</a>
       </form>
+    </section>
+
+    <!-- ==================================================== NOT AUTHORISED -->
+    <section class="login-view" id="denyView" hidden>
+      <div class="card login-card">
+        <div class="deny-mark">🔒</div>
+        <h1 class="login-title">Not the tournament admin</h1>
+        <p class="faint login-note">
+          You're signed in as <b id="denyEmail"></b>, but that account isn't the
+          tournament admin. Nothing you do here would save.
+        </p>
+        <button class="btn btn--block" type="button" id="denySignOut">Sign in as someone else</button>
+        <a class="faint login-back" href="index.html">← Back to the public site</a>
+      </div>
     </section>
 
     <!-- ============================================================ ADMIN -->
@@ -58,6 +82,21 @@
       </header>
 
       <main class="wrap admin-main">
+        <!-- Shown until ADMIN_UIDS is filled in — the only way to learn your UID. -->
+        <div class="card setup-card" id="uidSetup" hidden>
+          <h3 class="card__title" style="color: var(--gold)">⚙ One step left — lock this panel</h3>
+          <p class="muted" style="margin-top: 0">
+            Right now <b>any Google account</b> can open this screen (their changes would
+            still be rejected by the database). Paste the UID below into
+            <code>js/config.js</code> → <code>ADMIN_UIDS</code> and into
+            <code>database.rules.json</code>, then redeploy and publish the rules.
+          </p>
+          <div class="uid-row">
+            <code id="uidValue"></code>
+            <button class="btn btn--sm btn--primary" type="button" id="copyUid">Copy</button>
+          </div>
+        </div>
+
         <div class="card empty-state" id="noData" hidden>
           <h2>No tournament in the database</h2>
           <p class="muted">
