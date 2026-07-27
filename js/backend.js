@@ -164,26 +164,39 @@ export async function writePath(relPath, value) {
   return writeMany({ [relPath]: value });
 }
 
+/**
+ * Swap every SERVER_TIME marker for a real timestamp — including ones nested
+ * inside an object being written. A goal is written as a whole object with its
+ * timestamp inside, so a top-level-only pass would store the marker string
+ * itself as the time.
+ */
+function resolveTimes(value, stamp) {
+  if (value === SERVER_TIME) return stamp();
+  if (Array.isArray(value)) return value.map((v) => resolveTimes(v, stamp));
+  if (value && typeof value === "object") {
+    const out = {};
+    for (const [k, v] of Object.entries(value)) out[k] = resolveTimes(v, stamp);
+    return out;
+  }
+  return value;
+}
+
 /** Write several paths at once so the UI never shows a half-applied change. */
 export async function writeMany(patch) {
-  const updates = { ...patch };
-
   if (isDemo) {
     if (!demoUser()) throw new Error("Not signed in.");
     let data = demoRead();
-    updates["meta/updatedAt"] = Date.now();
-    for (const [p, v] of Object.entries(updates)) {
-      data = setIn(data, p, v === SERVER_TIME ? Date.now() : v);
-    }
+    const updates = { ...resolveTimes(patch, () => Date.now()), "meta/updatedAt": Date.now() };
+    for (const [p, v] of Object.entries(updates)) data = setIn(data, p, v);
     demoWrite(data);
     return;
   }
 
   const { db, ref, update, serverTimestamp } = await initFirebase();
-  for (const [p, v] of Object.entries(updates)) {
-    if (v === SERVER_TIME) updates[p] = serverTimestamp();
-  }
-  updates["meta/updatedAt"] = serverTimestamp();
+  const updates = {
+    ...resolveTimes(patch, serverTimestamp),
+    "meta/updatedAt": serverTimestamp(),
+  };
   await update(ref(db, DB_PATH), updates);
 }
 
