@@ -14,6 +14,7 @@ import {
   onAuth,
   signInDemo,
   signInWithGoogle,
+  signInWithEmail,
   signOutAdmin,
   isDemo,
   isAdmin,
@@ -37,12 +38,17 @@ let settingsPainted = false;
 
 show($("#demoBanner"), isDemo);
 
-// Demo mode has no Firebase project, so Google sign-in cannot work — fall back
-// to the passphrase instead.
+// Real mode offers both: Google for the organiser, and a shared email account
+// for whoever else is running the scoreboard. Demo mode has no Firebase project,
+// so only the local passphrase can work.
 show($("#googleBtn"), !isDemo);
-show($("#demoField"), isDemo);
-show($("#loginBtn"), isDemo);
+show($("#orRule"), !isDemo);
+show($("#emailField"), !isDemo);
+show($("#demoField"), true);
+show($("#loginBtn"), true);
 if (isDemo) {
+  $("#passwordLabel").textContent = "Demo passphrase";
+  $("#loginBtn").textContent = "Enter demo";
   $("#loginNote").textContent =
     "Demo mode — enter the passphrase from js/config.js. Nothing here is secure until Firebase is configured.";
 }
@@ -97,17 +103,20 @@ $("#googleBtn").addEventListener("click", async () => {
 
 $("#loginForm").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  if (!isDemo) return;
   const btn = $("#loginBtn");
+  const label = btn.textContent;
   show($("#loginErr"), false);
   btn.disabled = true;
+  btn.textContent = "Signing in…";
   try {
-    await signInDemo($("#password").value);
+    if (isDemo) await signInDemo($("#password").value);
+    else await signInWithEmail($("#email").value, $("#password").value);
     $("#password").value = "";
   } catch (ex) {
     loginError(ex);
   } finally {
     btn.disabled = false;
+    btn.textContent = label;
   }
 });
 

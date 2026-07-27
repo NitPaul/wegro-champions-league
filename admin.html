@@ -38,13 +38,20 @@
           Sign in with Google
         </button>
 
-        <!-- Demo mode only: no Firebase project yet. -->
+        <div class="or-rule" id="orRule"><span>or</span></div>
+
+        <!-- Shared admin account, so a second person can sign in without Google. -->
+        <div class="field" id="emailField" hidden>
+          <label for="email">Email</label>
+          <input class="input" type="email" id="email" autocomplete="username"
+                 placeholder="tournament@wegro.global" />
+        </div>
         <div class="field" id="demoField" hidden>
-          <label for="password">Demo passphrase</label>
+          <label for="password" id="passwordLabel">Password</label>
           <input class="input" type="password" id="password" autocomplete="current-password" />
         </div>
         <button class="btn btn--primary btn--block" type="submit" id="loginBtn" hidden>
-          Enter demo
+          Sign in
         </button>
 
         <p class="login-err" id="loginErr" hidden></p>

@@ -59,6 +59,22 @@
   font-size: 34px;
   line-height: 1;
 }
+.or-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--faint);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.or-rule::before,
+.or-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
 
 /* ---- First-run UID setup -------------------------------------------------- */
 .setup-card {

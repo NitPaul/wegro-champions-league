@@ -62,8 +62,8 @@ whatever two-factor auth is already on your Google account.
    choose the **Singapore (asia-southeast1)** location → start in **locked mode** → **Enable**.
    *(Do this before step 5 — otherwise Firebase leaves `databaseURL` out of the config snippet.)*
 4. Left sidebar → **Build → Authentication** → **Get started** → **Google** → enable it, pick a
-   support email → **Save**. Do **not** also enable Email/Password: two sign-in methods means two
-   different UIDs, and the security rule pins exactly one.
+   support email → **Save**. Optionally also enable **Email/Password** for a shared admin account
+   — see *Adding a second admin* below, and use a different address from your Google one.
 5. Back to **Project Overview** → click the **web icon `</>`** → nickname `wegro-cl` → leave
    "Also set up Firebase Hosting" unchecked → **Register app**. Copy the `firebaseConfig` block.
 
@@ -255,9 +255,32 @@ scoreline without crediting a player.
 More than one person can run the tournament — a backup in case you're unavailable, or a colleague
 working the scoreboard while you referee. There's no limit.
 
-1. **They sign in.** Send them the admin URL and ask them to press *Sign in with Google*. They'll
-   be refused — which is correct — but the refusal screen shows **their own ID** with a Copy
-   button. They send you that.
+There are two ways in, and the login screen offers both:
+
+| | Best for |
+|---|---|
+| **Sign in with Google** | You. No password exists to leak or forget, and it inherits your Google 2FA. |
+| **Email + password** | A shared "tournament account" you can hand to someone else, no Google account needed. |
+
+### Setting up the shared email account
+
+In Firebase: **Authentication → Sign-in method → Email/Password → Enable**, then
+**Users → Add user** with the address and password you intend to share.
+
+**Use an address that is not any admin's Google address.** Firebase keeps one account per email,
+so the same address on both providers collides with `auth/account-exists-with-different-credential`.
+A dedicated address like `tournament@…` avoids it entirely.
+
+Then add that account's UID to `ADMIN_UIDS` and re-publish the rules (steps 2–4 below).
+
+Worth knowing about a shared password: everyone using it shows up as the same person, so the
+tournament can't tell who changed what, and taking access away from one person means changing the
+password for everybody. For a scoreboard that's a fine trade — just make it a deliberate one.
+
+### Adding anyone (either method)
+
+1. **They sign in.** Send them the admin URL. They'll be refused — which is correct — but the
+   refusal screen shows **their own ID** with a Copy button. They send you that.
 2. **Add them to the list.** In `js/config.js`:
    ```js
    export const ADMIN_UIDS = ["your-uid", "their-uid"];

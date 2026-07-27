@@ -216,6 +216,20 @@ export async function signInDemo(passphrase) {
   return demoUser();
 }
 
+/**
+ * Email + password sign-in, for a shared admin account that can be handed to a
+ * second person without them needing a Google account.
+ *
+ * Use an email that is NOT any admin's Google address. Firebase keeps one
+ * account per email address, so the same address on both providers collides
+ * with `auth/account-exists-with-different-credential`.
+ */
+export async function signInWithEmail(email, password) {
+  const { auth, signInWithEmailAndPassword } = await initFirebase();
+  const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+  return cred.user;
+}
+
 /** The real sign-in. Google handles the credential; we never see a password. */
 export async function signInWithGoogle() {
   const { auth, GoogleAuthProvider, signInWithPopup } = await initFirebase();
