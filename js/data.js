@@ -20,6 +20,87 @@ export const STATUS_LABEL = {
   ft: "Full-time",
 };
 
+/* ------------------------------------------------------------- match clock */
+
+/** The periods a match moves through, in order. Extra time is opt-in. */
+export const PERIOD_ORDER = ["pre", "h1", "ht", "h2", "ft"];
+export const PERIOD_LABEL = {
+  pre: "Not started",
+  h1: "First half",
+  ht: "Half-time",
+  h2: "Second half",
+  et: "Extra time",
+  ft: "Full-time",
+};
+/** Periods where the clock should actually be ticking. */
+export const PLAYING_PERIODS = ["h1", "h2", "et"];
+
+export function periodLength(data, period) {
+  const s = getSettings(data);
+  if (period === "h1" || period === "h2") return Number(s.halfSeconds);
+  if (period === "ht") return Number(s.breakSeconds);
+  if (period === "et") return Number(s.extraSeconds);
+  return 0;
+}
+
+/**
+ * Where a match's clock is *right now*.
+ *
+ * The database stores when the clock was last started plus the seconds banked
+ * before that, never a ticking value — so one admin press is one write, and
+ * every viewer computes the same running time locally. `nowMs` should come from
+ * `serverNow()` so a viewer with a wrong device clock still sees the right time.
+ */
+export function clockState(match, nowMs = Date.now()) {
+  const c = match?.clock || {};
+  const period = c.period || "pre";
+  const banked = Number(c.elapsed || 0);
+  const running = Boolean(c.running) && Number(c.startedAt) > 0;
+  const elapsed = running
+    ? banked + Math.max(0, (nowMs - Number(c.startedAt)) / 1000)
+    : banked;
+  return {
+    period,
+    running,
+    elapsed,
+    added: Number(c.addedSeconds || 0),
+    label: PERIOD_LABEL[period] || period,
+    isPlaying: PLAYING_PERIODS.includes(period),
+  };
+}
+
+const mmss = (secs) => {
+  const s = Math.max(0, Math.floor(secs));
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+};
+
+/**
+ * Football-style clock: counts up, stops at the period length, then shows
+ * stoppage separately (`08:00 +1:23`) rather than running past it.
+ */
+export function formatClock(elapsed, length) {
+  if (!length) return { main: mmss(elapsed), extra: null };
+  if (elapsed <= length) return { main: mmss(elapsed), extra: null };
+  return { main: mmss(length), extra: `+${mmss(elapsed - length)}` };
+}
+
+/** The next period in the sequence, honouring an extra-time detour. */
+export function nextPeriod(current) {
+  if (current === "et") return "ft";
+  const i = PERIOD_ORDER.indexOf(current);
+  if (i < 0 || i >= PERIOD_ORDER.length - 1) return "ft";
+  return PERIOD_ORDER[i + 1];
+}
+
+/** A fresh, stopped clock for a given period. */
+export const freshClock = (period = "pre") => ({
+  period,
+  running: false,
+  startedAt: null,
+  elapsed: 0,
+  addedSeconds: 0,
+});
+
 /* ----------------------------------------------------------------- helpers */
 
 /** Escape before any innerHTML. Team/player names are admin-supplied text. */
@@ -103,6 +184,7 @@ export function seed() {
       time,
       isFinal: false,
       events: null,
+      clock: freshClock(),
     };
   });
   matches.m7 = {
@@ -116,6 +198,7 @@ export function seed() {
     time: "19:05",
     isFinal: true,
     events: null,
+    clock: freshClock(),
   };
 
   return {
@@ -144,6 +227,10 @@ export function seed() {
       maxGK: 1,
       auctionOpen: true,
       goldenBallPlayerId: null,
+      // Match clock, in seconds — deck Rule 1: two 8-minute halves, 2-minute break.
+      halfSeconds: 480,
+      breakSeconds: 120,
+      extraSeconds: 300,
     },
     teams,
     players,

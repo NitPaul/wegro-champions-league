@@ -398,6 +398,206 @@
   }
 }
 
+/* ==========================================================================
+   MATCH-DAY CONSOLE — everything for one match, on one screen.
+   Controls are deliberately oversized: this is used standing at a touchline.
+   ========================================================================== */
+.console-card {
+  text-align: center;
+  border-color: var(--line-strong);
+}
+.console-card.is-running {
+  border-color: rgba(242, 98, 42, 0.55);
+  box-shadow: 0 0 0 1px rgba(242, 98, 42, 0.2), var(--shadow);
+}
+.console-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.console-score {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+.cs-team {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(13px, 3.4vw, 18px);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-team--away {
+  text-align: left;
+}
+.cs-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(34px, 11vw, 62px);
+  line-height: 1;
+  min-width: 1.1em;
+  font-variant-numeric: tabular-nums;
+}
+.cs-dash {
+  color: var(--faint);
+  font-size: clamp(20px, 6vw, 34px);
+  padding: 0 4px;
+}
+
+.clock {
+  margin: 12px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 9vw, 46px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--mint);
+}
+.clock-extra {
+  color: var(--gold);
+  font-size: 0.55em;
+  margin-left: 8px;
+}
+.clock-track {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.clock-track > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--wg-green), var(--mint));
+  transition: width 0.3s linear;
+}
+
+.console-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.goal-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.goal-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease;
+  min-height: 68px;
+}
+.goal-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+.goal-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.goal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.goal-btn .plus {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--mint);
+}
+.goal-btn .nm {
+  font-size: 12.5px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.goal-btn--away .plus {
+  color: var(--wg-orange);
+}
+.console-hint {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+}
+
+/* ---- Scorer picker -------------------------------------------------------- */
+.picker {
+  margin-top: var(--gap);
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(63, 217, 164, 0.45);
+  background: linear-gradient(180deg, rgba(63, 217, 164, 0.08), var(--surface));
+  animation: riseIn 0.22s ease both;
+}
+.picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+.picker-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 11px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  min-height: 52px;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.picker-btn:hover {
+  background: var(--surface-2);
+}
+.picker-btn:active {
+  transform: scale(0.97);
+}
+.picker-btn span {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.picker-btn.is-cap {
+  border-color: rgba(232, 195, 92, 0.45);
+}
+.picker-btn.is-cap span {
+  color: var(--gold);
+}
+.picker-btn.is-alt {
+  background: transparent;
+  color: var(--muted);
+}
+
 /* ---- Events --------------------------------------------------------------- */
 .event-grid {
   display: grid;

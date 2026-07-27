@@ -22,6 +22,7 @@ import {
 } from "./backend.js";
 import { $, $$, setHTML, show, wireTabs, rememberTab, toast, confirmPhrase } from "./ui.js";
 import { renderAuction } from "./auction.js";
+import { renderLive } from "./live.js";
 import * as D from "./data.js";
 
 const e = D.escapeHtml;
@@ -168,6 +169,7 @@ function render() {
   if (empty) return;
 
   renderAuction(data);
+  renderLive(data);
   preserveFocus(() => renderMatches());
   renderEvents();
   renderSettings();

@@ -3,7 +3,7 @@
    Every visitor sees the same data update live as the admin edits it.
    ========================================================================== */
 
-import { subscribe, isDemo } from "./backend.js";
+import { subscribe, isDemo, serverNow } from "./backend.js";
 import { $, setHTML, show, wireTabs, rememberTab } from "./ui.js";
 import { renderCharts, initCharts } from "./charts.js";
 import { celebrate } from "./confetti.js";
@@ -59,12 +59,24 @@ function setShell(visible) {
   show($("#content"), visible);
 }
 
-// Keep relative times and the countdown honest without re-rendering everything.
+// Keep relative times, the countdown and any running match clock honest without
+// re-rendering the page — only the digits change.
 setInterval(() => {
   if (!current) return;
   paintUpdated(current);
   paintCountdown(current);
+  tickClocks(current);
 }, 1000);
+
+function tickClocks(data) {
+  for (const el of document.querySelectorAll("[data-clock]")) {
+    const m = data.matches?.[el.dataset.clock];
+    if (!m) continue;
+    const c = D.clockState(m, serverNow());
+    const f = D.formatClock(c.elapsed, D.periodLength(data, c.period));
+    el.textContent = `${f.main}${f.extra || ""}`;
+  }
+}
 
 /* ---------------------------------------------------------------- render */
 
@@ -190,19 +202,60 @@ function paintBanners(data) {
   show(lb, Boolean(live));
   if (live) {
     const s = D.matchSides(data, live);
+    const c = D.clockState(live, serverNow());
+    const f = D.formatClock(c.elapsed, D.periodLength(data, c.period));
+    const running = c.period !== "pre" && c.period !== "ft";
     setHTML(
       lb,
       `<span class="pill pill--live">Live</span>
        <span><b>${e(s.homeLabel)}</b> ${live.homeScore ?? 0} – ${live.awayScore ?? 0} <b>${e(s.awayLabel)}</b></span>
-       <span class="faint">${live.isFinal ? "Final" : `Match ${live.no}`}</span>`
+       ${
+         running
+           ? `<span class="faint">${e(c.label)} · <b class="live-clock" data-clock="${e(
+               live.id
+             )}">${f.main}${f.extra || ""}</b></span>`
+           : `<span class="faint">${live.isFinal ? "Final" : `Match ${live.no}`}</span>`
+       }`
     );
   }
 }
 
 /* ------------------------------------------------------------- overview */
 
+function paintCaptains(data) {
+  const state = D.auctionState(data);
+  setHTML(
+    $("#captains"),
+    D.teamsList(data)
+      .map((t, i) => {
+        const st = state[t.id];
+        return `<article class="cap-card" style="--i:${i}">
+        <div class="cap-photo">
+          <img src="${e(t.captainPhoto)}" alt="${e(t.captainName)}, captain of ${e(t.name)}"
+               loading="lazy" onerror="this.closest('.cap-photo').classList.add('no-img')" />
+          <span class="cap-slot">${e(t.slot)}</span>
+        </div>
+        <h4 class="cap-team">${e(t.name)}</h4>
+        <p class="cap-person">${e(t.captainName)}</p>
+        <div class="cap-meta">
+          ${
+            t.jerseyColor
+              ? `<span class="jersey-dot" style="background:${e(t.jerseyColor)}" title="${e(
+                  t.jerseyLabel || "Jersey colour"
+                )}"></span>`
+              : ""
+          }
+          <span>${st.squad.length + 1} player${st.squad.length === 0 ? "" : "s"}</span>
+        </div>
+      </article>`;
+      })
+      .join("")
+  );
+}
+
 function paintOverview(data) {
   const meta = D.getMeta(data);
+  paintCaptains(data);
 
   // Next up: the live match, else the first not-yet-played match.
   const list = D.matchesList(data);
@@ -330,8 +383,14 @@ function fixtureCard(data, m, { plain = false } = {}) {
     .join(" ");
 
   const label = m.isFinal ? "Final" : `Match ${m.no}`;
+  const clock = D.clockState(m, serverNow());
+  const showClock = live && clock.period !== "pre" && clock.period !== "ft";
+  const cf = D.formatClock(clock.elapsed, D.periodLength(data, clock.period));
+
   const status = live
-    ? `<span class="pill pill--live">Live</span>`
+    ? `<span class="pill pill--live">${
+        showClock ? `${e(clock.label)} <b class="live-clock" data-clock="${e(m.id)}">${cf.main}${cf.extra || ""}</b>` : "Live"
+      }</span>`
     : played
     ? `<span class="pill pill--mint">Full-time</span>`
     : `<span>${e(m.time || "")}</span>`;

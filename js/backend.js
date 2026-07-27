@@ -51,8 +51,24 @@ async function initFirebase() {
   // Keep the admin signed in across refreshes — a mid-match reload should not
   // dump the referee back to a login screen.
   await fb.setPersistence(fb.auth, fb.browserLocalPersistence).catch(() => {});
+
+  // The match clock is stored as "started at <timestamp>", so a viewer whose
+  // device clock is wrong would see the wrong match time. Firebase publishes the
+  // difference between this device and its servers; we apply it everywhere.
+  try {
+    fb.onValue(fb.ref(fb.db, ".info/serverTimeOffset"), (snap) => {
+      timeOffset = Number(snap.val()) || 0;
+    });
+  } catch {
+    /* offset stays 0 — the clock is then only as good as the device */
+  }
   return fb;
 }
+
+let timeOffset = 0;
+
+/** "Now" agreed by every device, not just this one. Use for all clock maths. */
+export const serverNow = () => Date.now() + timeOffset;
 
 /* ---------------------------------------------------------------------- DEMO */
 

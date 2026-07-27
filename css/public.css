@@ -295,6 +295,114 @@
   }
 }
 
+/* ---- Captains showcase ---------------------------------------------------- */
+.captains {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (min-width: 760px) {
+  .captains {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.cap-card {
+  position: relative;
+  text-align: center;
+  padding: 16px 10px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--surface-2), rgba(11, 59, 54, 0.55));
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+  animation: riseIn 0.4s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.cap-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--wg-green), var(--mint), var(--wg-orange));
+}
+.cap-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(63, 217, 164, 0.45);
+}
+.cap-photo {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 11px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(140deg, var(--mint), var(--wg-orange));
+}
+.cap-photo img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top center;
+  background: var(--bg-2);
+  display: block;
+}
+.cap-photo.no-img::after {
+  content: "👤";
+  position: absolute;
+  inset: 3px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg-2);
+  font-size: 30px;
+}
+.cap-slot {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  border: 2px solid var(--mint);
+  color: var(--mint);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+}
+.cap-team {
+  font-size: clamp(13px, 3.2vw, 16px);
+  letter-spacing: 0.02em;
+  color: var(--mint);
+  margin: 0 0 3px;
+}
+.cap-person {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.cap-meta {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--faint);
+}
+
+/* ---- Live clock ----------------------------------------------------------- */
+.live-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 /* ---- Fixtures ------------------------------------------------------------- */
 .fixtures {
   display: grid;
@@ -1166,6 +1274,19 @@ button.fx__body:hover {
   border-top: 1px solid var(--line);
   padding: 18px 0 26px;
   margin-top: 20px;
+}
+.foot-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.credit {
+  color: var(--mint);
+  font-weight: 700;
+}
+.credit:hover {
+  color: var(--wg-orange);
 }
 
 /* ---- Print ---------------------------------------------------------------- */

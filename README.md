@@ -19,7 +19,7 @@ Maps" button still works.
 
 | Tab | What people see |
 |---|---|
-| Overview | Countdown to kick-off, venue with an embedded map, live match banner, leaderboard |
+| Overview | The four captains, countdown to kick-off, venue map, live match with a running clock, leaderboard |
 | Fixtures | All 7 matches; tap a finished one to see who scored |
 | Standings | Full table with form guide, top two marked **Q** for the Final |
 | Squads | The four squads, auction prices, budget meters, jersey colours |
@@ -203,8 +203,29 @@ Made a mistake? **Unsell** puts the player back and refunds the exact amount.
 
 ### Match day — 1 August, 4:00 PM
 
-**Matches tab.** Set a match to **Live** when it kicks off and **Full-time** when it ends. Only
-full-time matches count towards the leaderboard. Type both scores and press **Save score**.
+**Use the ▶ Match day tab.** It is built so you look at one screen for the whole match and never
+go hunting for a tab.
+
+Pick the match, press **Kick off**, and the clock runs — two 8-minute halves with a 2-minute
+break, exactly as Rule 1 says. It counts up and holds at `08:00`, showing stoppage separately
+(`08:00 +1:23`) like a real football clock. **+1 min stoppage**, **Pause** and **Reset** are all
+one tap, and **Add extra time** appears at full-time if the Final needs it.
+
+To record a goal: tap the big **+1** under the scoring team, then tap **who scored** from that
+squad's players. Two taps, and the scoreline and the scorer save in a single write — so the two
+can never drift apart. Didn't catch the scorer? Tap **Not sure**; the goal still counts and an
+**Add scorer** button waits for you in the match log. There's an **Own goal** button too.
+
+Ending a period with **⏭** moves you on; ending the second half sets full-time, which is what
+makes the result count towards the leaderboard.
+
+**The clock is shared.** Everyone watching the public site sees the same running time on the live
+match, ticking in real time — the database stores when the clock started rather than a ticking
+number, so a whole match costs a handful of writes. Viewers' own device clocks are corrected
+against Firebase's server time, so a phone set to the wrong time still shows the right match time.
+
+**All matches tab** is the fallback: type scorelines directly for any match, fix a result after
+the fact, or set a status by hand.
 
 The **Final fills itself in** — once all six group matches are full-time, the top two teams on
 the leaderboard drop into it automatically. You never pick the finalists by hand.
@@ -249,6 +270,7 @@ js/data.js            standings, stats and every auction rule (shared)
 js/public.js          public rendering
 js/admin.js           auth, matches, goals, settings
 js/auction.js         auction console
+js/live.js            match-day console: clock, one-tap goals, scorer picker
 js/charts.js          the charts (plain HTML/CSS bars — no charting library)
 js/confetti.js        ~60 lines of canvas, self-cleaning
 js/ui.js              small DOM helpers
@@ -330,7 +352,7 @@ Work down this list once. Everything above the line must be done **before the au
 
 **During the tournament**
 
-- [ ] Set each match **Live** at kick-off, **Full-time** at the whistle
+- [ ] Run every match from the **▶ Match day** tab — kick off, +1, tap the scorer, end the half
 - [ ] After the 6th group match, check the Final auto-filled with the right two teams
 - [ ] Pick the **Golden Ball** in Settings before the medals are handed out
 
@@ -363,3 +385,4 @@ names the exact rule and, for money problems, the maximum legal bid.
 ---
 
 Organised by **WeGro** · [wegro.global](https://www.wegro.global/)
+Developed by [NitPaul](https://github.com/NitPaul)
