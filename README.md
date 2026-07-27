@@ -350,6 +350,17 @@ Previews are cached hard. After deploying, paste the URL into
 [Facebook's Sharing Debugger](https://developers.facebook.com/tools/debug/) and press
 **Scrape Again** to force WhatsApp and Messenger to re-read it.
 
+Two messages that debugger shows are **not** problems:
+
+- **"This URL hasn't been shared on Facebook before."** It just means there's no cached data yet.
+  Press **Debug** and it fetches the page. Sometimes the first press returns a partial result —
+  press again.
+- **"Missing properties: fb:app_id."** That tag only associates the page with a Facebook App so
+  share counts appear in Facebook Insights. It plays no part in rendering a preview. There's a
+  commented-out slot for it in `index.html` if you ever create an app.
+
+The check that actually matters is sending the link to yourself on WhatsApp and seeing the card.
+
 ---
 
 ## Files
