@@ -15,7 +15,7 @@
    drift out of sync during a fast match.
    ========================================================================== */
 
-import { writeMany, serverNow } from "./backend.js";
+import { writeMany, serverNow, SERVER_TIME } from "./backend.js";
 import { $, setHTML, show, toast } from "./ui.js";
 import { celebrate } from "./confetti.js";
 import * as D from "./data.js";
@@ -329,7 +329,7 @@ async function scoreGoal(teamId, pick) {
     id: evId,
     type: "goal",
     teamId,
-    at: Date.now(),
+    at: SERVER_TIME,
     clockLabel: `${c.label} ${f.main}${f.extra || ""}`,
   };
 
@@ -365,8 +365,10 @@ async function clockAction(action) {
     const period = c.period === "pre" ? "h1" : c.period;
     patch[`${path}/period`] = period;
     patch[`${path}/running`] = true;
-    patch[`${path}/startedAt`] = Date.now();
-    patch[`${path}/elapsed`] = c.elapsed;
+    // The SERVER stamps this, never this device. Writing Date.now() here while
+    // reading with serverNow() made the clock open at the device's clock drift.
+    patch[`${path}/startedAt`] = SERVER_TIME;
+    patch[`${path}/elapsed`] = Math.round(c.elapsed);
     patch[`matches/${m.id}/status`] = "live";
     Object.assign(patch, bothScores(m)); // 0-0 from kick-off, not null-null
   }
@@ -403,6 +405,9 @@ async function clockAction(action) {
       [`${path}/startedAt`]: null,
       [`${path}/elapsed`]: 0,
       [`${path}/addedSeconds`]: 0,
+      // Also stand the match down. Leaving it "live" is why the public page
+      // kept showing a LIVE badge for a match that was no longer being played.
+      [`matches/${m.id}/status`]: "scheduled",
     });
   }
 

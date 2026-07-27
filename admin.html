@@ -306,6 +306,20 @@
 
           <!-- ------------------------------------------------------- DANGER -->
           <section class="panel" role="tabpanel" id="panel-danger" aria-labelledby="tab-danger" hidden>
+            <div class="card">
+              <h3 class="card__title">Backup &amp; restore</h3>
+              <p class="faint" style="margin-top: -6px">
+                Everything — teams, squads and prices, fixtures, scores and goals — in one file.
+                Take a backup right after the auction, and again before match day.
+              </p>
+              <div class="row">
+                <button class="btn btn--primary" id="exportBtn" type="button">⬇ Download backup</button>
+                <button class="btn" id="importBtn" type="button">⬆ Restore from a file</button>
+                <input type="file" id="importFile" accept="application/json,.json" hidden />
+              </div>
+              <p class="faint" id="backupInfo" style="margin-bottom: 0"></p>
+            </div>
+
             <div class="card danger-card">
               <h3 class="card__title" style="color: #ffb3b3">⚠ Danger zone</h3>
               <div class="danger-row">

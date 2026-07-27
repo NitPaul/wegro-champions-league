@@ -149,6 +149,16 @@ export function subscribe(cb) {
   };
 }
 
+/**
+ * Marker meaning "let the SERVER decide this timestamp".
+ *
+ * Anything time-critical — above all the match clock — must never be stamped
+ * with the device clock. A laptop running a minute slow would otherwise start
+ * every match at 01:00, because the value is written with one clock and read
+ * against another. Firebase resolves this sentinel on its own servers.
+ */
+export const SERVER_TIME = "__WGCL_SERVER_TIME__";
+
 /** Write one path (relative to DB_PATH). `null` deletes. Stamps meta/updatedAt. */
 export async function writePath(relPath, value) {
   return writeMany({ [relPath]: value });
@@ -162,12 +172,17 @@ export async function writeMany(patch) {
     if (!demoUser()) throw new Error("Not signed in.");
     let data = demoRead();
     updates["meta/updatedAt"] = Date.now();
-    for (const [p, v] of Object.entries(updates)) data = setIn(data, p, v);
+    for (const [p, v] of Object.entries(updates)) {
+      data = setIn(data, p, v === SERVER_TIME ? Date.now() : v);
+    }
     demoWrite(data);
     return;
   }
 
   const { db, ref, update, serverTimestamp } = await initFirebase();
+  for (const [p, v] of Object.entries(updates)) {
+    if (v === SERVER_TIME) updates[p] = serverTimestamp();
+  }
   updates["meta/updatedAt"] = serverTimestamp();
   await update(ref(db, DB_PATH), updates);
 }

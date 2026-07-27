@@ -312,6 +312,44 @@ ship set to the deck: 100 BDT budget, **8 BDT base price**, 1–5 BDT raises, 6 
 **Danger** has three separate resets: clear scores only, reset the auction only, or wipe
 everything. Each needs a typed confirmation.
 
+## Backup & restore
+
+**Danger → Download backup** saves the whole tournament — teams, squads and prices, fixtures,
+scores and goals — as a single JSON file.
+
+**Restore from a file** puts it all back. It checks the file is really a tournament before
+touching anything, and shows you what it contains next to what it's about to replace, so a
+restore is never a blind leap.
+
+Worth doing twice: **right after the auction** (that's the hour of work you least want to redo)
+and **before kick-off**. If anything goes wrong mid-tournament you're one file away from where
+you were.
+
+## Why the match clock is server-stamped
+
+The clock stores *when it started* rather than a ticking number — and that start time is written
+by **Firebase's servers**, not by the admin's laptop.
+
+This matters more than it sounds. Writing the device's own time while reading against server time
+means the clock opens at whatever your machine's clock drift happens to be: a laptop running a
+minute slow started every match at `01:00`. Since the timestamp now comes from the server, the
+clock reads the same on the admin laptop and on every phone watching, no matter how wrong any of
+those devices' clocks are.
+
+## Link previews
+
+Sharing the link in WhatsApp, Messenger, Facebook, Slack or X shows the crest, the four captains,
+the date and the venue.
+
+Those tags live in the `<head>` of `index.html` and **must use absolute URLs** — WhatsApp and
+Facebook will not resolve a relative `og:image`, which is the usual reason a shared link appears
+as bare text. If you move to a different domain, change the four absolute URLs at the top of
+`index.html`; nothing else needs touching.
+
+Previews are cached hard. After deploying, paste the URL into
+[Facebook's Sharing Debugger](https://developers.facebook.com/tools/debug/) and press
+**Scrape Again** to force WhatsApp and Messenger to re-read it.
+
 ---
 
 ## Files
@@ -394,6 +432,8 @@ Work down this list once. Everything above the line must be done **before the au
 - [ ] Signed in once, UID pasted into `ADMIN_UIDS` **and** `database.rules.json`, rules published
 - [ ] The gold "one step left" card is gone from the admin panel
 - [ ] Netlify domain added under **Authentication → Settings → Authorized domains**
+- [ ] The four absolute URLs in `index.html` match the real domain, and the link previews
+      correctly in a WhatsApp message to yourself
 - [ ] Signed out and tried the admin page in a private window — you get the login screen
 - [ ] The `Permission denied` test in Step 3 actually returns a denial
 - [ ] Signed in as admin and pressed **Load tournament**
@@ -403,6 +443,7 @@ Work down this list once. Everything above the line must be done **before the au
 
 **Before 1 August, 4:00 PM — match day**
 
+- [ ] **Download a backup** the moment the auction finishes
 - [ ] Squads look right on the public **Squads** tab
 - [ ] Auction closed in **Settings** (stops accidental edits mid-tournament)
 - [ ] Kick-off time in **Settings** matches reality, so the countdown is honest

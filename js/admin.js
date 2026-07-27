@@ -580,6 +580,88 @@ $("#teamEdit").addEventListener("click", async (ev) => {
   }
 });
 
+/* --------------------------------------------------------- backup & restore */
+
+/** A one-line summary of a tournament file, so a restore is never a blind leap. */
+function describe(d) {
+  const teams = D.teamsList(d);
+  const players = D.playersList(d);
+  const sold = players.filter((p) => p.teamId).length;
+  const played = D.matchesList(d).filter(D.isPlayed).length;
+  const goals = D.allEvents(d).length;
+  return `${teams.length} teams · ${sold}/${players.length} players sold · ${played} matches played · ${goals} goals logged`;
+}
+
+$("#exportBtn").addEventListener("click", () => {
+  if (!data) return toast("Nothing to back up yet.", "err");
+  const stamp = new Date()
+    .toISOString()
+    .slice(0, 16)
+    .replace("T", "-")
+    .replace(":", "");
+  const payload = {
+    _format: "wegro-champions-league",
+    _version: 1,
+    _exportedAt: new Date().toISOString(),
+    tournament: data,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `wegro-cl-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  $("#backupInfo").textContent = `Backed up: ${describe(data)}`;
+  toast("Backup downloaded.");
+});
+
+$("#importBtn").addEventListener("click", () => $("#importFile").click());
+
+$("#importFile").addEventListener("change", async (ev) => {
+  const file = ev.target.files?.[0];
+  ev.target.value = ""; // let the same file be picked again after a cancel
+  if (!file) return;
+
+  let incoming;
+  try {
+    const parsed = JSON.parse(await file.text());
+    // Accept both the wrapped export and a bare tournament node.
+    incoming = parsed?.tournament ?? parsed;
+  } catch {
+    return toast("That file isn't valid JSON.", "err");
+  }
+
+  // Check it's actually a tournament before letting it replace a live one.
+  const missing = ["teams", "players", "matches"].filter((k) => !incoming?.[k]);
+  if (missing.length)
+    return toast(`Not a tournament backup — missing ${missing.join(", ")}.`, "err");
+  if (!D.teamsList(incoming).length || !D.matchesList(incoming).length)
+    return toast("That backup has no teams or no fixtures.", "err");
+
+  const now = data ? `\n\nReplacing what's live now:\n${describe(data)}` : "";
+  if (
+    !confirm(
+      `Restore this backup?\n\n${describe(incoming)}${
+        incoming._exportedAt ? `\nTaken ${new Date(incoming._exportedAt).toLocaleString()}` : ""
+      }${now}\n\nThis overwrites everything currently in the database.`
+    )
+  )
+    return;
+
+  try {
+    await replaceAll(incoming);
+    matchSig = "";
+    settingsPainted = false;
+    $("#backupInfo").textContent = `Restored: ${describe(incoming)}`;
+    toast("Backup restored.");
+  } catch (ex) {
+    toast(friendlyError(ex), "err");
+  }
+});
+
 /* ------------------------------------------------------------------ danger */
 
 $("#resetScores").addEventListener("click", async () => {
