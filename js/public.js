@@ -255,6 +255,7 @@ function paintOverview(data) {
   );
   const map = $("#mapLink");
   map.href = meta.mapUrl;
+  paintMap(meta);
 
   const s = D.getSettings(data);
   setHTML(
@@ -268,6 +269,39 @@ function paintOverview(data) {
       .map((t) => `<span class="pill">${e(t)}</span>`)
       .join("")
   );
+}
+
+/**
+ * The venue map.
+ *
+ * Built once and left alone — rebuilding the iframe on every live score update
+ * would refetch the map and flicker it all evening.
+ *
+ * The URL is admin-editable, so it is checked against Google's embed endpoint
+ * before it ever reaches an `src`. An admin is trusted, but an iframe is the one
+ * place where a stray value stops being just text.
+ */
+let mapPainted = "";
+
+function paintMap(meta) {
+  const url = String(meta.mapEmbedUrl || "");
+  if (url === mapPainted) return;
+
+  const holder = $("#mapEmbed");
+  if (!url || !url.startsWith("https://www.google.com/maps/embed")) {
+    show(holder, false);
+    mapPainted = url;
+    return;
+  }
+
+  show(holder, true);
+  setHTML(
+    holder,
+    `<iframe src="${e(url)}" title="Map of ${e(meta.venueName)}" loading="lazy"
+       referrerpolicy="strict-origin-when-cross-origin"
+       allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`
+  );
+  mapPainted = url;
 }
 
 /* ------------------------------------------------------------- fixtures */

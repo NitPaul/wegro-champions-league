@@ -10,14 +10,16 @@ deck: 4 teams, a single round robin, then the top two meet in the Final.
 - **One admin** signs in and controls the auction, the scores and the medals.
 
 Static HTML/CSS/JavaScript. No build step, no dependencies to install, no framework.
-Nothing is loaded from a CDN except the Firebase SDK, so the page still renders on bad
-venue wifi.
+The only external requests are the Firebase SDK and the venue map — fonts, styles and every
+script are served from the site itself, so it still renders on bad venue wifi. The map sits in a
+lazy-loaded iframe, so if it can't load, the scoreboard is unaffected and the "Open in Google
+Maps" button still works.
 
 **What's on it**
 
 | Tab | What people see |
 |---|---|
-| Overview | Countdown to kick-off, venue, live match banner, leaderboard |
+| Overview | Countdown to kick-off, venue with an embedded map, live match banner, leaderboard |
 | Fixtures | All 7 matches; tap a finished one to see who scored |
 | Standings | Full table with form guide, top two marked **Q** for the Final |
 | Squads | The four squads, auction prices, budget meters, jersey colours |

@@ -125,6 +125,8 @@ export function seed() {
       venueName: "ChattoTurf, Bashundhara",
       plusCode: "RC7G+HQ Dhaka",
       mapUrl: "https://www.google.com/maps/search/?api=1&query=RC7G%2BHQ%20Dhaka",
+      mapEmbedUrl:
+        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3650.129914925772!2d90.42436437369103!3d23.81397888633572!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755c70012ef1109%3A0x1344a372022c1649!2sChattoturf%20Bashundhara!5e0!3m2!1sen!2sbd!4v1785181698373!5m2!1sen!2sbd",
       dateLabel: "Saturday, 1 August 2026",
       timeLabel: "4:00 PM – 7:30 PM",
       kickoffISO: "2026-08-01T16:00:00+06:00",

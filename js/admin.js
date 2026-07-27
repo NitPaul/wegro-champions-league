@@ -445,6 +445,7 @@ const META_FIELDS = [
   ["kickoffISO", "Kick-off (for the countdown)", "text"],
   ["auctionLabel", "Auction date & place", "text"],
   ["mapUrl", "Google Maps link", "url"],
+  ["mapEmbedUrl", "Google Maps embed URL (the src from Share → Embed a map)", "url"],
   ["season", "Season", "text"],
 ];
 
