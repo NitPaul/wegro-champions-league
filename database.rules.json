@@ -5,29 +5,7 @@
 
     "wegro": {
       ".read": true,
-      ".write": "auth != null && auth.uid === 'PASTE_YOUR_ADMIN_UID_HERE'",
-
-      "$season": {
-        "meta": { ".validate": "newData.hasChildren(['name'])" },
-        "matches": {
-          "$matchId": {
-            "homeScore": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-            "awayScore": { ".validate": "newData.isNumber() && newData.val() >= 0" },
-            "status": {
-              ".validate": "newData.val() === 'scheduled' || newData.val() === 'live' || newData.val() === 'ft'"
-            }
-          }
-        },
-        "players": {
-          "$playerId": {
-            "price": { ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= 0)" }
-          }
-        },
-        "settings": {
-          "budget": { ".validate": "newData.isNumber() && newData.val() > 0" },
-          "basePrice": { ".validate": "newData.isNumber() && newData.val() >= 0" }
-        }
-      }
+      ".write": "auth != null && auth.uid === 'w5ueQU809vW0lhEnpKlosnesesC2'"
     }
   }
 }

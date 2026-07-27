@@ -32,7 +32,7 @@ export const firebaseConfig = {
  * This list controls the admin *screen*. What actually protects the data is the
  * matching UID in the database rules, which Google's servers enforce.
  */
-export const ADMIN_UIDS = [];
+export const ADMIN_UIDS = ["w5ueQU809vW0lhEnpKlosnesesC2"];
 
 /** Where the tournament lives in the database. Change the season to run 2027. */
 export const DB_PATH = "wegro/cl2026";

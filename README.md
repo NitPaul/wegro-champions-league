@@ -112,6 +112,11 @@ to save is rejected by the database. After step 3 they don't even get the screen
 That rule says: *anyone may read, only this one account may write.* It is enforced by Google's
 servers, so it holds even if someone opens devtools and calls the database directly.
 
+**Why there are no `.validate` rules.** An earlier draft type-checked scores, statuses and prices.
+They were dropped deliberately: only one trusted account can write at all, so they added almost no
+protection — while every one of them was a way for a legitimate write to fail at 6pm on match day
+for a reason that takes ten minutes to diagnose at a turf. Fewer moving parts wins.
+
 **Verify it works** — open the public site in a private window, open the browser console and run:
 
 ```js
