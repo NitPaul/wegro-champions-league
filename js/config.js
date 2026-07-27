@@ -12,13 +12,14 @@
    ========================================================================== */
 
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  databaseURL: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
+  apiKey: "AIzaSyA862gvve4AihIJmZEHnq0DNR3DBS7la-M",
+  authDomain: "wegro-champions-league.firebaseapp.com",
+  databaseURL:
+    "https://wegro-champions-league-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "wegro-champions-league",
+  storageBucket: "wegro-champions-league.firebasestorage.app",
+  messagingSenderId: "1093328363797",
+  appId: "1:1093328363797:web:ba0d9b67abde034721c91c",
 };
 
 /**
