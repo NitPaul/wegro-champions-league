@@ -2,10 +2,9 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "wegro": {
       ".read": true,
-      ".write": "auth != null && auth.uid === 'w5ueQU809vW0lhEnpKlosnesesC2'"
+      ".write": "auth != null && (auth.uid === 'w5ueQU809vW0lhEnpKlosnesesC2')"
     }
   }
 }

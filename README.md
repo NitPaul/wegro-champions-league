@@ -250,6 +250,36 @@ scoreline without crediting a player.
 
 ---
 
+## Adding a second admin
+
+More than one person can run the tournament — a backup in case you're unavailable, or a colleague
+working the scoreboard while you referee. There's no limit.
+
+1. **They sign in.** Send them the admin URL and ask them to press *Sign in with Google*. They'll
+   be refused — which is correct — but the refusal screen shows **their own ID** with a Copy
+   button. They send you that.
+2. **Add them to the list.** In `js/config.js`:
+   ```js
+   export const ADMIN_UIDS = ["your-uid", "their-uid"];
+   ```
+3. **Regenerate the rules** so the database agrees with the app:
+   ```bash
+   node tools/make-rules.mjs
+   ```
+   That rewrites `database.rules.json` and prints the block to paste into
+   **Realtime Database → Rules → Publish**.
+4. **Deploy** (`git push`). They can now sign in.
+
+Always use the generator rather than hand-editing the rules. Two places have to agree on who the
+admin is, and when they drift you get the confusing failure where the panel opens but nothing
+saves.
+
+To remove someone, delete their UID from `ADMIN_UIDS`, re-run the generator, re-publish, redeploy.
+They lose access immediately — the database stops accepting their writes the moment you publish,
+even before the site redeploys.
+
+---
+
 ## Adjusting the rules
 
 **Settings** holds the budget, base price, raise limits, squad size and position limits. These
@@ -281,6 +311,7 @@ js/confetti.js        ~60 lines of canvas, self-cleaning
 js/ui.js              small DOM helpers
 assets/               logo, crest, captain photos, fonts, social image
 database.rules.json   ← paste into Firebase to lock writes
+tools/make-rules.mjs  regenerates the rules from ADMIN_UIDS
 netlify.toml          deploy + security headers
 ```
 

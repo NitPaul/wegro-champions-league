@@ -58,9 +58,17 @@
         <div class="deny-mark">🔒</div>
         <h1 class="login-title">Not the tournament admin</h1>
         <p class="faint login-note">
-          You're signed in as <b id="denyEmail"></b>, but that account isn't the
-          tournament admin. Nothing you do here would save.
+          You're signed in as <b id="denyEmail"></b>, but that account isn't on the
+          admin list. Nothing you did here would save.
         </p>
+        <p class="faint login-note" style="margin-top: 0">
+          Should you have access? Send this ID to the tournament organiser and ask
+          them to add you.
+        </p>
+        <div class="uid-row">
+          <code id="denyUid"></code>
+          <button class="btn btn--sm btn--primary" type="button" id="copyDenyUid">Copy</button>
+        </div>
         <button class="btn btn--block" type="button" id="denySignOut">Sign in as someone else</button>
         <a class="faint login-back" href="index.html">← Back to the public site</a>
       </div>

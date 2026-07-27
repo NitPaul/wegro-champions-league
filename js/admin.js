@@ -58,7 +58,12 @@ onAuth((user) => {
   show($("#adminView"), signedIn);
 
   if (!signedIn) {
-    if (user) $("#denyEmail").textContent = user.email || user.uid;
+    if (user) {
+      $("#denyEmail").textContent = user.email || user.uid;
+      // Show them their own UID: it's the only way a would-be second admin can
+      // pass it to the organiser without someone digging in the Firebase console.
+      $("#denyUid").textContent = user.uid;
+    }
     return;
   }
 
@@ -113,14 +118,19 @@ for (const id of ["#signOut", "#denySignOut"]) {
   });
 }
 
-$("#copyUid").addEventListener("click", async () => {
-  try {
-    await navigator.clipboard.writeText($("#uidValue").textContent);
-    toast("UID copied.");
-  } catch {
-    toast("Copy failed — select the UID and copy it manually.", "err");
-  }
-});
+for (const [btn, src] of [
+  ["#copyUid", "#uidValue"],
+  ["#copyDenyUid", "#denyUid"],
+]) {
+  $(btn).addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($(src).textContent);
+      toast("ID copied.");
+    } catch {
+      toast("Copy failed — select the ID and copy it manually.", "err");
+    }
+  });
+}
 
 /* -------------------------------------------------------------------- data */
 
