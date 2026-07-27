@@ -57,12 +57,12 @@ const POOL = [
 
 /** Round-robin order exactly as printed in the tournament deck. */
 const FIXTURES = [
-  ["t1", "t2", "16:00"],
-  ["t3", "t4", "16:30"],
-  ["t1", "t3", "17:00"],
-  ["t2", "t3", "17:30"],
-  ["t1", "t4", "18:00"],
-  ["t2", "t4", "18:30"],
+  ["t1", "t2", "16:00"], // Match 1 — A v B
+  ["t3", "t4", "16:30"], // Match 2 — C v D
+  ["t1", "t3", "17:00"], // Match 3 — A v C
+  ["t1", "t4", "17:30"], // Match 4 — A v D
+  ["t2", "t4", "18:00"], // Match 5 — B v D
+  ["t2", "t3", "18:30"], // Match 6 — B v C
 ];
 
 export function seed() {
@@ -133,7 +133,7 @@ export function seed() {
     },
     settings: {
       budget: 100,
-      basePrice: 10,
+      basePrice: 8,
       minRaise: 1,
       maxRaise: 5,
       squadSize: 6, // bought players per team, on top of the captain

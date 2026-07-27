@@ -3,6 +3,9 @@
 Live scores, standings, squads and a full auction console for the WeGro Champions League —
 **Saturday 1 August 2026, ChattoTurf, Bashundhara**.
 
+Fixtures, squads, rules and auction settings follow the *Updated WeGro Champions League 2026*
+deck: 4 teams, a single round robin, then the top two meet in the Final.
+
 - **Everyone** opens the site and watches scores update live. They cannot change anything.
 - **One admin** signs in and controls the auction, the scores and the medals.
 
@@ -199,9 +202,9 @@ scoreline without crediting a player.
 
 ## Adjusting the rules
 
-**Settings** holds the budget, base price, raise limits, squad size and position limits. Your deck
-disagrees with itself on the base price — the headline says 8 BDT, the sentence below says 10 BDT.
-It ships as **10 BDT**; change it in Settings before the auction if 8 is correct.
+**Settings** holds the budget, base price, raise limits, squad size and position limits. These
+ship set to the deck: 100 BDT budget, **8 BDT base price**, 1–5 BDT raises, 6 players per squad,
+1 minimum and 2 maximum per position (goalkeepers capped at 1).
 
 **Danger** has three separate resets: clear scores only, reset the auction only, or wipe
 everything. Each needs a typed confirmation.
@@ -286,7 +289,7 @@ Work down this list once. Everything above the line must be done **before the au
 - [ ] `js/config.js` filled in — the orange demo banner is **gone** on both pages
 - [ ] The `Permission denied` test in Step 3 actually returns a denial
 - [ ] Signed in as admin and pressed **Load tournament**
-- [ ] Base price confirmed as 8 or 10 BDT in **Settings**
+- [ ] Fixtures on the public site match the deck (M4 A–D, M5 B–D, M6 B–C)
 - [ ] Site deployed to Netlify and opened on a phone, not just the laptop
 - [ ] Laptop charged, and you know the venue wifi password
 
