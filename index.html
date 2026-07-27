@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>WeGro Champions League 2026 — Live Scores &amp; Standings</title>
+    <meta
+      name="description"
+      content="Live scores, standings, squads and top scorers for the WeGro Champions League 2026 — 1 August 2026, ChattoTurf, Bashundhara."
+    />
+    <meta name="theme-color" content="#062E2A" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="WeGro Champions League 2026" />
+    <meta
+      property="og:description"
+      content="Live scores, standings and squads — 1 August 2026, ChattoTurf, Bashundhara."
+    />
+    <meta property="og:image" content="assets/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/favicon.png" />
+    <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="assets/fonts/manrope-latin.woff2" crossorigin />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/public.css" />
+  </head>
+
+  <body>
+    <div id="demoBanner" class="demo-banner" hidden>
+      <strong>Demo mode</strong> — this browser only. Add your Firebase config in
+      <code>js/config.js</code> to go live for everyone.
+    </div>
+
+    <header class="site-head">
+      <div class="wrap site-head__inner">
+        <a class="brand" href="https://www.wegro.global/" target="_blank" rel="noopener">
+          <img src="assets/wegro-logo.png" alt="WeGro" width="461" height="128" />
+        </a>
+        <div class="site-head__meta">
+          <span class="updated" id="updated">Loading…</span>
+          <a class="btn btn--sm btn--ghost" href="admin.html">Admin</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- ---------------------------------------------------------- hero -->
+      <section class="hero">
+        <img class="hero__crest" src="assets/crest.png" alt="WeGro Champions League crest" width="639" height="639" />
+        <div class="hero__text">
+          <p class="eyebrow" id="heroEyebrow">Season 2026</p>
+          <h1 class="hero__title">WeGro <span>Champions League</span></h1>
+          <p class="hero__sub" id="heroSub">
+            ChattoTurf, Bashundhara · Saturday, 1 August 2026 · 4:00 PM – 7:30 PM
+          </p>
+          <div class="row" id="heroPills"></div>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------ countdown -->
+      <section class="countdown card" id="countdownCard" hidden>
+        <p class="eyebrow">Kick-off in</p>
+        <div class="countdown__grid" id="countdown"></div>
+      </section>
+
+      <div class="banner banner--champion" id="championBanner" hidden></div>
+      <div class="banner banner--live" id="liveBanner" hidden></div>
+
+      <!-- ----------------------------------------------------------- tabs -->
+      <nav class="tabs tabs--sticky" role="tablist" aria-label="Sections" id="tabs">
+        <button class="tab" role="tab" aria-selected="true" aria-controls="panel-overview" id="tab-overview">Overview</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-fixtures" id="tab-fixtures">Fixtures</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-table" id="tab-table">Standings</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-squads" id="tab-squads">Squads</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-stats" id="tab-stats">Stats &amp; Awards</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="panel-rules" id="tab-rules">Rules</button>
+      </nav>
+
+      <div id="loading" class="card empty-state">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="muted" style="margin: 0">Connecting to the live scoreboard…</p>
+      </div>
+
+      <div id="offline" class="card empty-state" hidden>
+        <h2>Can't reach the live scoreboard</h2>
+        <p class="muted">
+          Check your internet connection. Scores appear here automatically as soon as the
+          connection comes back — you don't need to refresh.
+        </p>
+        <button class="btn btn--primary" type="button" onclick="location.reload()">Try again</button>
+      </div>
+
+      <div id="notSetUp" class="card empty-state" hidden>
+        <h2>Tournament not set up yet</h2>
+        <p class="muted">
+          An admin needs to open the admin panel and load the tournament once. Scores will
+          appear here automatically — no need to refresh.
+        </p>
+        <a class="btn btn--primary" href="admin.html">Open admin panel</a>
+      </div>
+
+      <div id="content" hidden>
+      <!-- ------------------------------------------------------- OVERVIEW -->
+      <section class="panel" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+        <div class="cols-2">
+          <div class="card">
+            <h3 class="card__title">Next up</h3>
+            <div id="nextUp"></div>
+          </div>
+          <div class="card">
+            <h3 class="card__title">Leaderboard</h3>
+            <div id="miniTable"></div>
+          </div>
+        </div>
+
+        <div class="cols-2">
+          <div class="card">
+            <h3 class="card__title">Venue &amp; schedule</h3>
+            <ul class="deflist" id="venueList"></ul>
+            <a class="btn btn--sm btn--ghost" id="mapLink" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+          </div>
+          <div class="card">
+            <h3 class="card__title">Format</h3>
+            <p class="muted" style="margin-top: 0">
+              Four teams, single round robin — every team plays every other team once. The top
+              two on the leaderboard meet in the Final. A win is 3 points, a draw 1; level teams
+              are separated by goal difference.
+            </p>
+            <div class="row" id="formatPills"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------- FIXTURES -->
+      <section class="panel" role="tabpanel" id="panel-fixtures" aria-labelledby="tab-fixtures" hidden>
+        <div class="card">
+          <h3 class="card__title">Match fixtures &amp; results</h3>
+          <p class="faint" style="margin-top: -6px">
+            Tap a finished match to see who scored.
+          </p>
+          <div id="fixtures" class="fixtures"></div>
+        </div>
+      </section>
+
+      <!-- ------------------------------------------------------ STANDINGS -->
+      <section class="panel" role="tabpanel" id="panel-table" aria-labelledby="tab-table" hidden>
+        <div class="card">
+          <h3 class="card__title">Leaderboard</h3>
+          <div class="table-scroll"><div id="table"></div></div>
+          <p class="faint">
+            <strong class="q-key">Q</strong> qualifies for the Final. Order: points, then goal
+            difference, then goals scored.
+          </p>
+        </div>
+      </section>
+
+      <!-- --------------------------------------------------------- SQUADS -->
+      <section class="panel" role="tabpanel" id="panel-squads" aria-labelledby="tab-squads" hidden>
+        <div class="card" id="auctionStatus"></div>
+        <div class="card">
+          <h3 class="card__title">Auction budgets</h3>
+          <p class="faint chart-note">Spent out of each captain's 100 BDT, jersey included.</p>
+          <div id="chartSpend"></div>
+        </div>
+        <div id="squads" class="squads"></div>
+        <div class="card" id="unsoldCard" hidden>
+          <h3 class="card__title">Still in the auction pool</h3>
+          <div id="unsold" class="pool"></div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- STATS -->
+      <section class="panel" role="tabpanel" id="panel-stats" aria-labelledby="tab-stats" hidden>
+        <div class="card">
+          <h3 class="card__title">Medals</h3>
+          <div id="awards" class="awards"></div>
+        </div>
+
+        <div class="cols-2">
+          <div class="card">
+            <h3 class="card__title">Points won</h3>
+            <p class="faint chart-note">3 for a win, 1 for a draw.</p>
+            <div id="chartPoints"></div>
+          </div>
+          <div class="card">
+            <h3 class="card__title">Goal difference</h3>
+            <p class="faint chart-note">Separates teams level on points (Rule 7).</p>
+            <div id="chartGD"></div>
+          </div>
+        </div>
+
+        <div class="cols-2">
+          <div class="card">
+            <h3 class="card__title">Golden boot race</h3>
+            <p class="faint chart-note">Goals scored, top 8.</p>
+            <div id="chartScorers"></div>
+          </div>
+          <div class="card">
+            <h3 class="card__title">Where the goals came from</h3>
+            <p class="faint chart-note">Goals by the scorer's position.</p>
+            <div id="chartPositions"></div>
+          </div>
+        </div>
+
+        <div class="cols-3">
+          <div class="card">
+            <h3 class="card__title">Top scorers</h3>
+            <div id="scorers"></div>
+          </div>
+          <div class="card">
+            <h3 class="card__title">Assists</h3>
+            <div id="assists"></div>
+          </div>
+          <div class="card">
+            <h3 class="card__title">Goalkeepers</h3>
+            <div id="keepers"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------------------------------------------------------- RULES -->
+      <section class="panel" role="tabpanel" id="panel-rules" aria-labelledby="tab-rules" hidden>
+        <div class="card">
+          <h3 class="card__title">Tournament rules</h3>
+          <ol class="rules" id="rules"></ol>
+        </div>
+        <div class="card">
+          <h3 class="card__title">Player auction — bidding rules</h3>
+          <p class="faint" style="margin-top: -6px" id="auctionWhen"></p>
+          <div class="stat-tiles" id="auctionTiles"></div>
+          <ul class="rules rules--plain" id="auctionRules"></ul>
+        </div>
+      </section>
+      </div><!-- /#content -->
+    </main>
+
+    <footer class="site-foot">
+      <div class="wrap spread">
+        <span class="faint">WeGro Champions League 2026 · Organised by WeGro</span>
+        <a class="faint" href="https://www.wegro.global/" target="_blank" rel="noopener">wegro.global ↗</a>
+      </div>
+    </footer>
+
+    <script type="module" src="js/public.js"></script>
+  </body>
+</html>

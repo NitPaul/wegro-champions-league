@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Admin · WeGro Champions League 2026</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#062E2A" />
+    <link rel="icon" href="assets/favicon.png" type="image/png" />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/public.css" />
+    <link rel="stylesheet" href="css/admin.css" />
+  </head>
+
+  <body>
+    <div id="demoBanner" class="demo-banner" hidden>
+      <strong>Demo mode</strong> — changes stay in this browser only. Add your Firebase config
+      in <code>js/config.js</code> to make this the real admin panel.
+    </div>
+
+    <!-- ============================================================ LOGIN -->
+    <section class="login-view" id="loginView" hidden>
+      <form class="card login-card" id="loginForm" autocomplete="on">
+        <img class="login-crest" src="assets/crest.png" alt="" width="639" height="639" />
+        <h1 class="login-title">Tournament Admin</h1>
+        <p class="faint login-note" id="loginNote">
+          Only the tournament admin can sign in. Everyone else sees the public site.
+        </p>
+
+        <div class="field" id="emailField">
+          <label for="email">Email</label>
+          <input class="input" type="email" id="email" autocomplete="username" placeholder="admin@wegro.global" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input class="input" type="password" id="password" autocomplete="current-password" required />
+        </div>
+
+        <p class="login-err" id="loginErr" hidden></p>
+        <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Sign in</button>
+        <a class="faint login-back" href="index.html">← Back to the public site</a>
+      </form>
+    </section>
+
+    <!-- ============================================================ ADMIN -->
+    <div id="adminView" hidden>
+      <header class="site-head">
+        <div class="wrap site-head__inner">
+          <a class="brand" href="index.html">
+            <img src="assets/wegro-logo.png" alt="WeGro" width="461" height="128" />
+          </a>
+          <div class="site-head__meta">
+            <span class="pill pill--mint" id="whoami"></span>
+            <a class="btn btn--sm btn--ghost" href="index.html" target="_blank" rel="noopener">View site ↗</a>
+            <button class="btn btn--sm btn--ghost" id="signOut" type="button">Sign out</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="wrap admin-main">
+        <div class="card empty-state" id="noData" hidden>
+          <h2>No tournament in the database</h2>
+          <p class="muted">
+            Load the WeGro Champions League 2026 setup — 4 teams, the 24-player auction pool,
+            6 round-robin fixtures and the Final. You can edit everything afterwards.
+          </p>
+          <button class="btn btn--primary" id="seedBtn" type="button">Load tournament</button>
+        </div>
+
+        <div id="adminBody" hidden>
+          <nav class="tabs tabs--sticky" role="tablist" aria-label="Admin sections" id="tabs">
+            <button class="tab" role="tab" aria-selected="true" aria-controls="panel-auction" id="tab-auction">Auction</button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="panel-matches" id="tab-matches">Matches</button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="panel-events" id="tab-events">Goals</button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="panel-settings" id="tab-settings">Settings</button>
+            <button class="tab" role="tab" aria-selected="false" aria-controls="panel-danger" id="tab-danger">Danger</button>
+          </nav>
+
+          <!-- ------------------------------------------------------ AUCTION -->
+          <section class="panel" role="tabpanel" id="panel-auction" aria-labelledby="tab-auction">
+            <div class="card" id="auctionClosed" hidden>
+              <div class="spread">
+                <div>
+                  <b>The auction is closed.</b>
+                  <div class="faint">Re-open it in Settings if you need to change a squad.</div>
+                </div>
+                <button class="btn btn--sm" id="reopenAuction" type="button">Re-open</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="spread">
+                <h3 class="card__title" style="margin: 0">Sell a player</h3>
+                <span class="faint" id="auctionProgress"></span>
+              </div>
+              <div class="hr"></div>
+
+              <div class="sell-grid">
+                <div class="field">
+                  <label for="sellPlayer">Player</label>
+                  <select class="input" id="sellPlayer"></select>
+                </div>
+                <div class="field">
+                  <label for="sellTeam">Team</label>
+                  <select class="input" id="sellTeam"></select>
+                </div>
+                <div class="field">
+                  <label for="sellPrice">Winning bid (BDT)</label>
+                  <input class="input" type="number" id="sellPrice" min="0" step="1" inputmode="numeric" />
+                </div>
+              </div>
+
+              <div class="bid-ladder" id="bidLadder"></div>
+              <p class="sell-msg" id="sellMsg"></p>
+              <button class="btn btn--primary btn--block" id="sellBtn" type="button">Sell player</button>
+            </div>
+
+            <div class="card">
+              <h3 class="card__title">Captains</h3>
+              <div class="captain-grid" id="captainGrid"></div>
+            </div>
+
+            <div class="card">
+              <div class="spread">
+                <h3 class="card__title" style="margin: 0">Player pool</h3>
+                <label class="row faint" style="gap: 6px">
+                  <input type="checkbox" id="hideSold" /> Hide sold
+                </label>
+              </div>
+              <div class="hr"></div>
+              <div id="poolList" class="pool"></div>
+            </div>
+
+            <div class="card">
+              <h3 class="card__title">Jersey colours <span class="faint">(Rule 5 — paid from the same budget)</span></h3>
+              <div id="jerseyList" class="jersey-grid"></div>
+            </div>
+          </section>
+
+          <!-- ------------------------------------------------------ MATCHES -->
+          <section class="panel" role="tabpanel" id="panel-matches" aria-labelledby="tab-matches" hidden>
+            <div class="card">
+              <p class="faint" style="margin: 0">
+                Set a match to <b>Live</b> while it is being played and <b>Full-time</b> when it
+                ends — only full-time matches count towards the leaderboard. The Final fills in
+                automatically once all six group matches are full-time.
+              </p>
+            </div>
+            <div id="matchList" class="stack"></div>
+          </section>
+
+          <!-- -------------------------------------------------------- GOALS -->
+          <section class="panel" role="tabpanel" id="panel-events" aria-labelledby="tab-events" hidden>
+            <div class="card">
+              <h3 class="card__title">Log a goal</h3>
+              <div class="event-grid">
+                <div class="field">
+                  <label for="evMatch">Match</label>
+                  <select class="input" id="evMatch"></select>
+                </div>
+                <div class="field">
+                  <label for="evTeam">Team</label>
+                  <select class="input" id="evTeam"></select>
+                </div>
+                <div class="field">
+                  <label for="evScorer">Scorer</label>
+                  <select class="input" id="evScorer"></select>
+                </div>
+                <div class="field">
+                  <label for="evAssist">Assist <span class="faint">(optional)</span></label>
+                  <select class="input" id="evAssist"></select>
+                </div>
+              </div>
+              <label class="row faint" style="gap: 7px; margin: 10px 0">
+                <input type="checkbox" id="evPenalty" /> Scored from a penalty
+              </label>
+              <div class="row">
+                <button class="btn btn--primary" id="addGoal" type="button">Add goal</button>
+                <button class="btn btn--orange" id="addPenaltyGoal" type="button">
+                  Add Rule 4 penalty goal
+                </button>
+              </div>
+              <p class="faint" style="margin-bottom: 0">
+                A Rule 4 penalty goal is awarded for lateness. It counts on the scoreline but is
+                not credited to any player.
+              </p>
+            </div>
+
+            <div class="card">
+              <div class="spread">
+                <h3 class="card__title" style="margin: 0">Goals in this match</h3>
+                <span id="evTally"></span>
+              </div>
+              <div class="hr"></div>
+              <div id="evList"></div>
+            </div>
+          </section>
+
+          <!-- ----------------------------------------------------- SETTINGS -->
+          <section class="panel" role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" hidden>
+            <div class="card">
+              <h3 class="card__title">Auction settings</h3>
+              <div class="settings-grid" id="settingsGrid"></div>
+              <label class="row" style="gap: 8px; margin-top: 12px">
+                <input type="checkbox" id="setAuctionOpen" /> Auction is open
+              </label>
+              <div class="hr"></div>
+              <div class="field">
+                <label for="setGoldenBall">Golden Ball — Best Player (your pick)</label>
+                <select class="input" id="setGoldenBall"></select>
+              </div>
+              <button class="btn btn--primary" id="saveSettings" type="button" style="margin-top: 14px">
+                Save settings
+              </button>
+            </div>
+
+            <div class="card">
+              <h3 class="card__title">Tournament details</h3>
+              <div class="settings-grid" id="metaGrid"></div>
+              <button class="btn btn--primary" id="saveMeta" type="button" style="margin-top: 14px">
+                Save details
+              </button>
+            </div>
+
+            <div class="card">
+              <h3 class="card__title">Teams &amp; captains</h3>
+              <div id="teamEdit" class="stack"></div>
+            </div>
+          </section>
+
+          <!-- ------------------------------------------------------- DANGER -->
+          <section class="panel" role="tabpanel" id="panel-danger" aria-labelledby="tab-danger" hidden>
+            <div class="card danger-card">
+              <h3 class="card__title" style="color: #ffb3b3">⚠ Danger zone</h3>
+              <div class="danger-row">
+                <div class="grow">
+                  <b>Clear all scores</b>
+                  <div class="faint">Wipes every result and goal. Squads and settings are kept.</div>
+                </div>
+                <button class="btn btn--danger" id="resetScores" type="button">Clear scores</button>
+              </div>
+              <div class="danger-row">
+                <div class="grow">
+                  <b>Reset the auction</b>
+                  <div class="faint">Returns all 24 players to the pool and refunds every budget.</div>
+                </div>
+                <button class="btn btn--danger" id="resetAuction" type="button">Reset auction</button>
+              </div>
+              <div class="danger-row">
+                <div class="grow">
+                  <b>Reset the entire tournament</b>
+                  <div class="faint">Back to a fresh setup. Everything is lost.</div>
+                </div>
+                <button class="btn btn--danger" id="resetAll" type="button">Reset everything</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="js/admin.js"></script>
+  </body>
+</html>

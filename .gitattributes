@@ -1,0 +1,6 @@
+# Keep text files LF in the repo regardless of who checks them out.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.woff2 binary
