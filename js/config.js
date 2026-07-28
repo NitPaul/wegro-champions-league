@@ -9,6 +9,20 @@
    Database security rule in `database.rules.json`, which rejects every write
    that does not come from your admin account. Google publishes these configs
    in their own docs for exactly this reason.
+
+   GitHub's secret scanner flags the apiKey below because it matches the shape
+   of a Google API key. It cannot tell a browser key from a server key, so this
+   is a false positive — close the alert as such. Do NOT rotate the key: it has
+   to be public for the site to work, and rotating breaks every visitor.
+
+   What DOES matter, and is worth checking once:
+     - Authentication -> Settings -> User actions: turn OFF "Enable create
+       (sign-up)". Otherwise anyone holding this key can create accounts in the
+       project. They still cannot write — the rule pins writes to the admin UID
+       — but there is no reason to leave the door open. Add admin accounts from
+       the console instead.
+     - Google Cloud Console -> Credentials -> the browser key: restrict it to
+       this site's domains so it only works from here.
    ========================================================================== */
 
 export const firebaseConfig = {
