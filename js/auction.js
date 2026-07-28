@@ -143,7 +143,11 @@ function paintCaptains() {
             <span class="faint">BDT left of ${s.budget}</span>
           </div>
           <div class="faint">
-            Squad ${x.squad.length}/${s.squadSize} ·
+            Squad ${x.squad.length}/${x.squadSize}${
+              x.extraPlayers > 0
+                ? ` <span class="flag-extra">+${x.extraPlayers} extra</span>`
+                : ""
+            } ·
             ${
               x.complete
                 ? `<b style="color:var(--mint)">squad complete</b>`

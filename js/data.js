@@ -549,6 +549,26 @@ export function awards(data) {
  * Per-team auction position: spend, remaining budget, squad counts and which
  * position categories the team is still allowed (or still required) to buy.
  */
+/**
+ * How many players this team is meant to buy.
+ *
+ * Normally the tournament-wide `squadSize`, but a team may carry its own number.
+ * That is for the case where one squad legitimately ends up a player over or
+ * under the standard size: its counter then reads against its own size (7/7)
+ * instead of showing a permanent mismatch (7/6), while `extraPlayers` below
+ * still records that it is off-standard so the UI can flag it.
+ */
+export function squadSizeOf(team, settings) {
+  const own = Number(team?.squadSize);
+  return Number.isFinite(own) && own > 0 ? own : Number(settings.squadSize);
+}
+
+/** Total places across all squads. Not `teams × squadSize` once a team differs. */
+export function squadCapacity(data) {
+  const s = getSettings(data);
+  return teamsList(data).reduce((n, t) => n + squadSizeOf(t, s), 0);
+}
+
 export function auctionState(data) {
   const s = getSettings(data);
   const out = {};
@@ -559,7 +579,8 @@ export function auctionState(data) {
     const jerseyCost = Number(t.jerseyCost || 0);
     const spent = spentOnPlayers + jerseyCost;
     const remaining = Number(s.budget) - spent;
-    const slotsLeft = Number(s.squadSize) - squad.length;
+    const size = squadSizeOf(t, s);
+    const slotsLeft = size - squad.length;
 
     const counts = {};
     for (const pos of POSITIONS) counts[pos] = squad.filter((p) => p.pos === pos).length;
@@ -575,6 +596,14 @@ export function auctionState(data) {
       squad,
       counts,
       max: { GK: Number(s.maxGK), DEF: s.maxPerCategory, MID: s.maxPerCategory, FWD: s.maxPerCategory },
+      squadSize: size,
+      /**
+       * Players this team actually holds above the standard squad size — what
+       * the UI flags in red. Measured against players held, not against the
+       * team's own size, so raising a team's size before it has signed anyone
+       * does not flag a squad that is still under-filled.
+       */
+      extraPlayers: Math.max(0, squad.length - Number(s.squadSize)),
       spent,
       spentOnPlayers,
       jerseyCost,
@@ -626,8 +655,7 @@ function simulate(data, playerId, teamId) {
  * a perfectly legal sale.
  */
 function poolIsExact(data) {
-  const s = getSettings(data);
-  return playersList(data).length === teamsList(data).length * Number(s.squadSize);
+  return playersList(data).length === squadCapacity(data);
 }
 
 /**
@@ -646,7 +674,7 @@ function validateGlobalShape(data, playerId, teamId) {
   const everyoneMustSell = poolIsExact(data);
 
   for (const pos of POSITIONS) {
-    const slotsOf = (t) => Number(s.squadSize) - bought[t.id];
+    const slotsOf = (t) => squadSizeOf(t, s) - bought[t.id];
 
     // Scarcity: enough of this position left for every team that still needs one.
     const needing = teams.filter((t) => counts[t.id][pos] < min && slotsOf(t) > 0);
@@ -690,7 +718,7 @@ export function shapeAdvice(data) {
   const out = {};
   for (const pos of POSITIONS) {
     const needing = teams.filter(
-      (t) => counts[t.id][pos] < min && Number(s.squadSize) - bought[t.id] > 0
+      (t) => counts[t.id][pos] < min && squadSizeOf(t, s) - bought[t.id] > 0
     );
     out[pos] = { left: pool[pos], teamsNeeding: needing.length, tight: pool[pos] <= needing.length };
   }
@@ -719,7 +747,7 @@ export function validateSale(data, playerId, teamId, price) {
     return { ok: false, error: `Below base price — minimum is ${bdt(s.basePrice)}.` };
 
   if (st.slotsLeft <= 0)
-    return { ok: false, error: `${team.name} already has a full squad of ${s.squadSize}.` };
+    return { ok: false, error: `${team.name} already has a full squad of ${st.squadSize}.` };
 
   const cap = st.max[player.pos];
   if (st.counts[player.pos] >= cap)

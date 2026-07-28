@@ -665,9 +665,13 @@
 }
 @media (min-width: 720px) {
   .team-edit-row {
-    grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-columns: 60px minmax(0, 1fr) minmax(0, 1fr) 104px auto;
     align-items: end;
   }
+}
+/* Squad size — a 1-2 digit box, so it never needs a full column of its own. */
+.field--narrow .input {
+  text-align: center;
 }
 .team-edit-row img {
   width: 46px;

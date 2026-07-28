@@ -263,6 +263,22 @@ textarea {
   border-color: rgba(239, 90, 90, 0.42);
   color: #ff9d9d;
 }
+/* A squad carrying more players than the standard size. Small, red, inline —
+   it sits inside a sub-line rather than replacing it, so the count still reads
+   cleanly (7/7) while the difference from the standard squad stays visible. */
+.flag-extra {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: rgba(239, 90, 90, 0.16);
+  border: 1px solid rgba(239, 90, 90, 0.45);
+  color: #ff9d9d;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
 .pill--live {
   background: rgba(242, 98, 42, 0.18);
   border-color: rgba(242, 98, 42, 0.55);

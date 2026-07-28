@@ -179,13 +179,16 @@ function divergingChart({ rows, unit = "" }) {
 }
 
 /** A ratio against a fixed limit — a meter, not a chart. */
-function meter({ label, sub, used, limit, tip }) {
+/** `flag` is an optional red badge appended to the sub-line (still escaped). */
+function meter({ label, sub, flag, used, limit, tip }) {
   const pct = Math.max(0, Math.min(100, (used / limit) * 100));
   const over = used > limit;
   return `<div class="meter" tabindex="0" data-tip="${e(tip)}">
     <div class="meter-head"><b>${e(label)}</b><span class="num">${used} / ${limit}</span></div>
     <div class="meter-track"><i class="${over ? "is-over" : ""}" style="--pct:${pct}%"></i></div>
-    <div class="meter-sub">${e(sub)}</div>
+    <div class="meter-sub">${e(sub)}${
+      flag ? ` <span class="flag-extra">${e(flag)}</span>` : ""
+    }</div>
   </div>`;
 }
 
@@ -279,15 +282,22 @@ export function renderCharts(data) {
     `<div class="meters">${D.teamsList(data)
       .map((t) => {
         const x = st[t.id];
+        // A squad running off-standard reads against its own size, with the
+        // difference called out rather than left as a silent mismatch.
         return meter({
           label: t.name,
-          sub: `${x.squad.length}/${s.squadSize} players${
+          sub: `${x.squad.length}/${x.squadSize} players${
             x.jerseyCost ? ` · ${x.jerseyCost} BDT jersey` : ""
           } · ${x.remaining} BDT left`,
+          flag: x.extraPlayers > 0 ? `+${x.extraPlayers} extra` : "",
           used: x.spent,
           limit: Number(s.budget),
           tip: `${t.name} — spent ${x.spent} of ${s.budget} BDT on ${x.squad.length} player${
             x.squad.length === 1 ? "" : "s"
+          }${
+            x.extraPlayers > 0
+              ? `, ${x.extraPlayers} more than the standard squad of ${s.squadSize}`
+              : ""
           }${x.jerseyCost ? ` and a ${x.jerseyCost} BDT jersey` : ""}`,
         });
       })

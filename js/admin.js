@@ -524,6 +524,12 @@ function renderSettings() {
           <input class="input" id="tn-${e(t.id)}" value="${e(t.name)}" /></div>
         <div class="field"><label for="tc-${e(t.id)}">Captain</label>
           <input class="input" id="tc-${e(t.id)}" value="${e(t.captainName)}" /></div>
+        <div class="field field--narrow">
+          <label for="ts-${e(t.id)}">Squad size</label>
+          <input class="input" id="ts-${e(t.id)}" type="number" min="1" step="1"
+                 inputmode="numeric" placeholder="${e(String(D.getSettings(data).squadSize))}"
+                 value="${t.squadSize ? e(String(t.squadSize)) : ""}" />
+        </div>
         <button class="btn btn--primary btn--sm" data-tsave="${e(t.id)}" type="button">Save</button>
       </div>`
       )
@@ -572,8 +578,22 @@ $("#teamEdit").addEventListener("click", async (ev) => {
   const name = $(`#tn-${id}`).value.trim();
   const cap = $(`#tc-${id}`).value.trim();
   if (!name) return toast("Team name cannot be empty.", "err");
+
+  // Blank means "use the tournament setting" — stored as null, not 0.
+  const sizeRaw = $(`#ts-${id}`).value.trim();
+  let size = null;
+  if (sizeRaw !== "") {
+    size = Number(sizeRaw);
+    if (!Number.isInteger(size) || size < 1)
+      return toast("Squad size must be a whole number of 1 or more.", "err");
+  }
+
   try {
-    await writeMany({ [`teams/${id}/name`]: name, [`teams/${id}/captainName`]: cap || null });
+    await writeMany({
+      [`teams/${id}/name`]: name,
+      [`teams/${id}/captainName`]: cap || null,
+      [`teams/${id}/squadSize`]: size,
+    });
     toast("Team saved.");
   } catch (ex) {
     toast(friendlyError(ex), "err");
