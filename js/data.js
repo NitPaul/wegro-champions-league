@@ -131,7 +131,7 @@ const CAPTAINS = [
 
 const POOL = [
   ["GK", ["Sabbir", "Jubair", "Shojeb", "Shanto"]],
-  ["DEF", ["Faruk", "Meshkat", "Ahbab", "Iftiakh Siam", "Faquid", "Mobin"]],
+  ["DEF", ["Faruk", "Meshkat", "Ahbab", "Iftiakh Siam", "Anirban", "Mobin"]],
   ["MID", ["Sajid", "Monir", "Ayon", "Afsar", "Aonyendo", "Mehedi (ops)", "Rabbe"]],
   ["FWD", ["Munna", "Yousuf", "Rabin", "Saad", "Mahmud", "Imran", "Uthsho"]],
 ];
