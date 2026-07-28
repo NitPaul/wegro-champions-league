@@ -131,7 +131,7 @@ not publish — go back and fix that before match day.
 ### Step 4 — load the tournament
 
 Open `admin.html`, sign in with Google, and press **Load tournament**. That writes the four
-teams, the 24-player auction pool, the six round-robin fixtures and the Final.
+teams, the 25-player auction pool, the six round-robin fixtures and the Final.
 
 ---
 
@@ -183,19 +183,23 @@ The console refuses any sale that would break the rules, and says why:
   legal bid is shown on every captain card
 - **the sale would strand another team**
 
-That last guard matters more than it sounds. With 24 players in four squads of six there is
-**exactly one legal combination of squad shapes**:
+That last guard matters more than it sounds. The pool is 25 players and the four squads hold
+24, so the shape is very nearly forced:
 
 | | Goalkeepers | Defenders | Midfielders | Forwards |
 |---|---|---|---|---|
-| One team | 1 | 2 | 2 | 1 |
-| One team | 1 | 2 | 1 | 2 |
-| Two teams | 1 | 1 | 2 | 2 |
+| Every team | 1 | 1–2 | **2** | 1–2 |
 
-Every team gets exactly one of the four goalkeepers. Only **two** teams can end up with two
-defenders — so if three teams each buy two, the fourth can never field a legal squad. The console
-blocks that sale and tells you which team you were about to strand. Watch the orange note above
-the player pool: it warns as soon as a position becomes scarce.
+Every team gets exactly one of the four goalkeepers, and — because there are eight midfielders
+and only eight midfield slots — **exactly two midfielders**. The remaining three places are split
+1–2 or 2–1 between defenders and forwards. Only two teams can end up with two defenders, so if
+three teams each buy two, the fourth can never field a legal squad. The console blocks that sale
+and tells you which team you were about to strand. Watch the orange note above the player pool: it
+warns as soon as a position becomes scarce.
+
+**One player will go unsold** — 25 players, 24 places. It will be a defender or a forward
+(midfielders and goalkeepers are all forced in). This is arithmetic, not a bug, so the console
+does not treat the last unsold player as an error.
 
 **Jersey colours** (Rule 5) are at the bottom of the Auction tab. The cost comes out of the same
 100 BDT budget and is included in every affordability check.

@@ -132,7 +132,7 @@ const CAPTAINS = [
 const POOL = [
   ["GK", ["Sabbir", "Jubair", "Shojeb", "Shanto"]],
   ["DEF", ["Faruk", "Meshkat", "Ahbab", "Iftiakh Siam", "Anirban", "Mobin"]],
-  ["MID", ["Sajid", "Monir", "Ayon", "Afsar", "Aonyendo", "Mehedi (ops)", "Rabbe"]],
+  ["MID", ["Sajid", "Monir", "Ayon", "Afsar", "Aonyendo", "Mehedi (ops)", "Rabbe", "Imtiaz"]],
   ["FWD", ["Munna", "Yousuf", "Rabin", "Saad", "Mahmud", "Imran", "Uthsho"]],
 ];
 
@@ -620,9 +620,10 @@ function simulate(data, playerId, teamId) {
 }
 
 /**
- * Is the pool exactly the size of the squads? Only then do the tournament-wide
- * guards apply — if an admin changes squadSize or adds players they'd otherwise
- * produce false blocks.
+ * Is the pool exactly the size of the squads? Only then can EVERY player be
+ * sold, which is what the absorption guard below assumes. With a spare player
+ * in the pool someone must go unsold by arithmetic, so that guard would fire on
+ * a perfectly legal sale.
  */
 function poolIsExact(data) {
   const s = getSettings(data);
@@ -630,20 +631,19 @@ function poolIsExact(data) {
 }
 
 /**
- * Tournament-wide feasibility. The per-team rules alone are not enough:
- * with this deck's pool there is exactly ONE legal way to divide the 24 players
- * into four squads, so a locally-legal purchase can still strand another team.
- * Example: defenders. Six exist and every team needs at least one, so the moment
- * three teams own two defenders each the fourth can never field a legal squad.
+ * Tournament-wide feasibility. The per-team rules alone are not enough: this
+ * pool barely covers the squads, so a locally-legal purchase can still strand
+ * another team. Example: defenders. Six exist and every team needs at least one,
+ * so the moment three teams own two defenders each the fourth can never field a
+ * legal squad.
  *
  * Returns `{ ok, error }` for the state produced by the hypothetical sale.
  */
 function validateGlobalShape(data, playerId, teamId) {
-  if (!poolIsExact(data)) return { ok: true, error: null };
-
   const { s, teams, counts, bought, pool } = simulate(data, playerId, teamId);
   const min = Number(s.minPerCategory);
   const caps = { GK: Number(s.maxGK), DEF: s.maxPerCategory, MID: s.maxPerCategory, FWD: s.maxPerCategory };
+  const everyoneMustSell = poolIsExact(data);
 
   for (const pos of POSITIONS) {
     const slotsOf = (t) => Number(s.squadSize) - bought[t.id];
@@ -661,7 +661,9 @@ function validateGlobalShape(data, playerId, teamId) {
     }
 
     // Absorption: enough room left for every remaining player of this position
-    // to find a home, otherwise someone goes unsold.
+    // to find a home, otherwise someone goes unsold. Only meaningful when the
+    // pool and the squads are the same size — see poolIsExact.
+    if (!everyoneMustSell) continue;
     const room = teams.reduce(
       (n, t) => n + Math.min(Math.max(0, caps[pos] - counts[t.id][pos]), Math.max(0, slotsOf(t))),
       0
@@ -683,7 +685,6 @@ function validateGlobalShape(data, playerId, teamId) {
  * bought so far. Drives the "shapes still available" hint in the auction UI.
  */
 export function shapeAdvice(data) {
-  if (!poolIsExact(data)) return null;
   const { s, teams, counts, bought, pool } = simulate(data, null, null);
   const min = Number(s.minPerCategory);
   const out = {};
