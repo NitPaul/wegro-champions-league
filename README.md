@@ -131,7 +131,8 @@ not publish — go back and fix that before match day.
 ### Step 4 — load the tournament
 
 Open `admin.html`, sign in with Google, and press **Load tournament**. That writes the four
-teams, the 25-player auction pool, the six round-robin fixtures and the Final.
+teams, the 25-player auction pool, the six round-robin fixtures and the Final — plus the chairman
+as a [special player](#special-players), unassigned until someone puts him in a team.
 
 ---
 
@@ -197,12 +198,36 @@ three teams each buy two, the fourth can never field a legal squad. The console 
 and tells you which team you were about to strand. Watch the orange note above the player pool: it
 warns as soon as a position becomes scarce.
 
-**One player will go unsold** — 25 players, 24 places. It will be a defender or a forward
-(midfielders and goalkeepers are all forced in). This is arithmetic, not a bug, so the console
-does not treat the last unsold player as an error.
+**If the pool is larger than the squads, someone goes unsold** — 25 players into 24 places leaves
+one out, and it would be a defender or a forward (midfielders and goalkeepers are all forced in).
+That is arithmetic, not a bug, so the console does not treat the last unsold player as an error.
+The alternative is to let one squad carry the extra body: give that team a **squad size of 7** in
+*Settings → Teams & captains*, which is what LEGACY runs. Its counter then reads 7/7 rather than a
+permanent 7/6, with a red **+1 extra** badge so the difference stays visible.
 
 **Jersey colours** (Rule 5) are at the bottom of the Auction tab. The cost comes out of the same
 100 BDT budget and is included in every affordability check.
+
+### Special players
+
+Some people are not part of the auction at all — the chairman, for instance, who may or may not
+turn up on the day. They live in **Auction → Special players**: set the name and position, pick a
+team from the dropdown (or *— not playing —*), press **Save**. That is the whole flow, and it works
+at any point, including during a match.
+
+A special player is deliberately outside every rule:
+
+- **free** — never touches a captain's 100 BDT
+- **takes no squad slot** — a full 6/6 squad stays 6/6, and no red *+extra* badge appears
+- **counts against no position limit** — a team already holding two forwards can still take one
+- **invisible to the auction** — not biddable, not in the pool, not counted in "25 of 25 sold"
+
+So adding one can never make a legal squad illegal, and removing one can never break it either.
+They appear in their own gold-dashed row at the foot of the squad on the public **Squads** tab,
+marked `special` and priced `free`; while unassigned they are listed in a separate *Special
+players* card so everyone can see they might still show up. They can be picked as a scorer or
+assister in the Goals tab like anyone else, but they are never credited with a clean sheet — that
+always goes to the squad's auction goalkeeper.
 
 Every sale fires a full-screen **SOLD!** card and confetti on the admin laptop, and the
 projector's Squads tab fills in live — budget meters draining as captains spend. The card

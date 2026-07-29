@@ -130,11 +130,23 @@ const CAPTAINS = [
 ];
 
 const POOL = [
-  ["GK", ["Sabbir", "Jubair", "Shojeb", "Shanto"]],
-  ["DEF", ["Faruk", "Meshkat", "Ahbab", "Iftiakh Siam", "Anirban", "Mobin"]],
+  ["GK", ["Sabbir", "Jubair", "Meshkat", "Shanto"]],
+  ["DEF", ["Faruk", "Shojeb", "Ahbab", "Iftiakh Siam", "Anirban", "Mobin"]],
   ["MID", ["Sajid", "Monir", "Ayon", "Afsar", "Aonyendo", "Mehedi (ops)", "Rabbe", "Imtiaz"]],
   ["FWD", ["Munna", "Yousuf", "Rabin", "Saad", "Mahmud", "Imran", "Uthsho"]],
 ];
+
+/**
+ * Players who sit outside the auction entirely: `[name, position]`.
+ *
+ * The chairman may or may not turn up on the day. If he does, the admin drops
+ * him into whichever squad needs a body — he costs nothing, fills no squad slot
+ * and counts against no position limit, so adding him can never break a squad
+ * that was already legal, and leaving him unassigned changes nothing either.
+ * Everything that counts money, slots or positions goes through
+ * `auctionPlayers()` and skips these.
+ */
+const SPECIALS = [["Chairman", "MID"]];
 
 /** Round-robin order exactly as printed in the tournament deck. */
 const FIXTURES = [
@@ -169,6 +181,12 @@ export function seed() {
       players[id] = { id, name, pos, teamId: null, price: null };
     }
   }
+  // Specials keep their own id prefix so changing the auction pool can never
+  // renumber them on top of one another.
+  SPECIALS.forEach(([name, pos], i) => {
+    const id = `s${i + 1}`;
+    players[id] = { id, name, pos, teamId: null, price: 0, special: true };
+  });
 
   const matches = {};
   FIXTURES.forEach(([homeId, awayId, time], i) => {
@@ -263,6 +281,23 @@ export const isPlayed = (m) => m?.status === "ft" && m.homeScore != null && m.aw
 
 export const teamPlayers = (data, teamId) =>
   playersList(data).filter((p) => p.teamId === teamId);
+
+/**
+ * A special player is outside the auction: no fee, no squad slot, no position
+ * limit. Only the admin can place one, and only by hand.
+ */
+export const isSpecial = (p) => Boolean(p?.special);
+
+/** The auction pool — everyone the captains actually bid on. */
+export const auctionPlayers = (data) => playersList(data).filter((p) => !isSpecial(p));
+
+export const specialPlayers = (data) => playersList(data).filter(isSpecial);
+
+/** A team's bought players, and its specials, kept apart. */
+export const teamSquad = (data, teamId) =>
+  teamPlayers(data, teamId).filter((p) => !isSpecial(p));
+export const teamSpecials = (data, teamId) =>
+  teamPlayers(data, teamId).filter(isSpecial);
 
 /* --------------------------------------------------------------- standings */
 
@@ -498,7 +533,8 @@ export function cleanSheets(data) {
 
   return teamsList(data)
     .map((t) => {
-      const gk = teamPlayers(data, t.id).find((p) => p.pos === "GK");
+      // The auction GK, not a special guest who happens to be listed as one.
+      const gk = teamSquad(data, t.id).find((p) => p.pos === "GK");
       if (!gk) return null;
       return {
         playerId: gk.id,
@@ -574,7 +610,8 @@ export function auctionState(data) {
   const out = {};
 
   for (const t of teamsList(data)) {
-    const squad = teamPlayers(data, t.id);
+    const squad = teamSquad(data, t.id);
+    const specials = teamSpecials(data, t.id);
     const spentOnPlayers = squad.reduce((n, p) => n + Number(p.price || 0), 0);
     const jerseyCost = Number(t.jerseyCost || 0);
     const spent = spentOnPlayers + jerseyCost;
@@ -594,6 +631,8 @@ export function auctionState(data) {
     out[t.id] = {
       team: t,
       squad,
+      /** Guest players carried on top of the squad — free, and outside every rule. */
+      specials,
       counts,
       max: { GK: Number(s.maxGK), DEF: s.maxPerCategory, MID: s.maxPerCategory, FWD: s.maxPerCategory },
       squadSize: size,
@@ -636,7 +675,7 @@ function simulate(data, playerId, teamId) {
     counts[t.id] = Object.fromEntries(POSITIONS.map((p) => [p, 0]));
     bought[t.id] = 0;
   }
-  for (const p of playersList(data)) {
+  for (const p of auctionPlayers(data)) {
     const owner = p.id === playerId ? teamId : p.teamId;
     if (owner && counts[owner]) {
       counts[owner][p.pos]++;
@@ -655,7 +694,7 @@ function simulate(data, playerId, teamId) {
  * a perfectly legal sale.
  */
 function poolIsExact(data) {
-  return playersList(data).length === squadCapacity(data);
+  return auctionPlayers(data).length === squadCapacity(data);
 }
 
 /**
@@ -737,6 +776,11 @@ export function validateSale(data, playerId, teamId, price) {
   const st = auctionState(data)[teamId];
 
   if (!player) return { ok: false, error: "Unknown player." };
+  if (isSpecial(player))
+    return {
+      ok: false,
+      error: `${player.name} is a special player — place them from the Special players panel, not through bidding.`,
+    };
   if (!team || !st) return { ok: false, error: "Pick a team." };
   if (player.teamId)
     return { ok: false, error: `${player.name} is already sold to ${teamById(data, player.teamId)?.name || "a team"}.` };
@@ -789,9 +833,25 @@ export function validateSale(data, playerId, teamId, price) {
   return validateGlobalShape(data, playerId, teamId);
 }
 
+/**
+ * Can this special player be placed with this team? Returns `{ ok, error }`.
+ *
+ * Deliberately almost no rules: a special is free and outside the squad limits,
+ * so the only things that can go wrong are a bad id and a team that does not
+ * exist. Passing `null` as the team means "take them back off the pitch".
+ */
+export function validateSpecial(data, playerId, teamId) {
+  const player = playerById(data, playerId);
+  if (!player) return { ok: false, error: "Unknown player." };
+  if (!isSpecial(player))
+    return { ok: false, error: `${player.name} is an auction player — sell them instead.` };
+  if (teamId && !teamById(data, teamId)) return { ok: false, error: "Pick a team." };
+  return { ok: true, error: null };
+}
+
 /** Auction progress across all teams. */
 export function auctionProgress(data) {
-  const players = playersList(data);
+  const players = auctionPlayers(data);
   const sold = players.filter((p) => p.teamId);
   return {
     sold: sold.length,

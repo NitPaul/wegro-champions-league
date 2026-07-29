@@ -605,7 +605,7 @@ $("#teamEdit").addEventListener("click", async (ev) => {
 /** A one-line summary of a tournament file, so a restore is never a blind leap. */
 function describe(d) {
   const teams = D.teamsList(d);
-  const players = D.playersList(d);
+  const players = D.auctionPlayers(d);
   const sold = players.filter((p) => p.teamId).length;
   const played = D.matchesList(d).filter(D.isPlayed).length;
   const goals = D.allEvents(d).length;
@@ -707,7 +707,8 @@ $("#resetAuction").addEventListener("click", async () => {
   const patch = {};
   for (const p of D.playersList(data)) {
     patch[`players/${p.id}/teamId`] = null;
-    patch[`players/${p.id}/price`] = null;
+    // Specials were never bought, so they have no price to clear back to "unsold".
+    patch[`players/${p.id}/price`] = D.isSpecial(p) ? 0 : null;
   }
   for (const t of D.teamsList(data)) {
     patch[`teams/${t.id}/jerseyColor`] = null;

@@ -245,7 +245,9 @@ function paintCaptains(data) {
                 )}"></span>`
               : ""
           }
-          <span>${st.squad.length + 1} player${st.squad.length === 0 ? "" : "s"}</span>
+          <span>${st.squad.length + st.specials.length + 1} player${
+            st.squad.length + st.specials.length === 0 ? "" : "s"
+          }</span>
         </div>
       </article>`;
       })
@@ -552,14 +554,35 @@ function paintSquads(data) {
           ${Array.from({ length: emptySlots })
             .map(() => `<li class="slot-empty"><span class="pos-tag">—</span><span class="grow">Open slot</span></li>`)
             .join("")}
+          ${st.specials
+            .map(
+              (p) => `<li class="is-special">
+                <span class="pos-tag ${e(p.pos)}">${e(p.pos)}</span>
+                <span class="grow">${e(p.name)} <span class="flag-special">special</span></span>
+                <span class="price">free</span>
+              </li>`
+            )
+            .join("")}
         </ul>
       </article>`;
       })
       .join("")
   );
 
+  // Special players who have not been placed in a team yet.
+  const spare = D.specialPlayers(data).filter((p) => !p.teamId);
+  show($("#specialCard"), spare.length > 0);
+  if (spare.length) {
+    setHTML(
+      $("#specialPool"),
+      `<div class="pool__chips">${spare
+        .map((p) => `<span class="pill">${e(p.name)} <span class="faint">${e(p.pos)}</span></span>`)
+        .join("")}</div>`
+    );
+  }
+
   // Remaining pool
-  const unsold = D.playersList(data).filter((p) => !p.teamId);
+  const unsold = D.auctionPlayers(data).filter((p) => !p.teamId);
   show($("#unsoldCard"), unsold.length > 0);
   if (unsold.length) {
     setHTML(

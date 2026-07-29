@@ -762,6 +762,12 @@ button.fx__body:hover {
 .squad__list li.is-captain {
   background: rgba(232, 195, 92, 0.1);
 }
+/* A guest player — tinted like the captain's row, because they are also outside
+   the auction, but dashed so it never reads as a bought squad member. */
+.squad__list li.is-special {
+  background: rgba(232, 195, 92, 0.07);
+  border: 1px dashed rgba(232, 195, 92, 0.34);
+}
 .pos-tag {
   flex: 0 0 auto;
   width: 34px;

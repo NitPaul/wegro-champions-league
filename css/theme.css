@@ -279,6 +279,21 @@ textarea {
   white-space: nowrap;
   vertical-align: baseline;
 }
+/* A guest from outside the auction. Same shape as .flag-extra but gold, because
+   it marks a privilege rather than a problem. */
+.flag-special {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: rgba(232, 195, 92, 0.15);
+  border: 1px solid rgba(232, 195, 92, 0.45);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
 .pill--live {
   background: rgba(242, 98, 42, 0.18);
   border-color: rgba(242, 98, 42, 0.55);

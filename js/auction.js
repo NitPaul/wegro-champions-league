@@ -52,6 +52,7 @@ export function renderAuction(next) {
   paintProgress();
   paintCaptains();
   paintPool();
+  paintSpecials();
   paintJerseys();
   paintLadder();
   validateNow();
@@ -70,7 +71,7 @@ function paintSelects() {
   const keepPlayer = playerSel.value;
   const keepTeam = teamSel.value;
 
-  const available = D.playersList(data).filter((p) => !p.teamId);
+  const available = D.auctionPlayers(data).filter((p) => !p.teamId);
   setHTML(
     playerSel,
     available.length
@@ -155,6 +156,13 @@ function paintCaptains() {
             }
             ${x.jerseyCost ? ` · jersey ${x.jerseyCost} BDT` : ""}
           </div>
+          ${
+            x.specials.length
+              ? `<div class="faint">+ ${x.specials
+                  .map((p) => `${e(p.name)} <span class="flag-special">special</span>`)
+                  .join(", ")}</div>`
+              : ""
+          }
           <div class="cap__chips">${chips}</div>
         </div>`;
       })
@@ -164,7 +172,7 @@ function paintCaptains() {
 
 function paintPool() {
   const hideSold = $("#hideSold").checked;
-  const players = D.playersList(data);
+  const players = D.auctionPlayers(data);
   const advice = D.shapeAdvice(data);
 
   const note =
@@ -206,6 +214,68 @@ function paintPool() {
             .join("")}
         </div>`;
       }).join("")
+  );
+}
+
+/**
+ * Special players — the guests who sit outside the auction.
+ *
+ * Rebuilt only when something actually changed, because this panel holds a text
+ * input: a live snapshot arriving mid-rename would otherwise wipe what is being
+ * typed.
+ */
+let specialSig = "";
+
+function paintSpecials() {
+  const rows = D.specialPlayers(data);
+  const teams = D.teamsList(data);
+  show($("#specialCard"), rows.length > 0);
+  if (!rows.length) return;
+
+  const sig = JSON.stringify([
+    rows.map((p) => [p.id, p.name, p.pos, p.teamId]),
+    teams.map((t) => [t.id, t.name]),
+  ]);
+  if (sig === specialSig) return;
+  specialSig = sig;
+
+  setHTML(
+    $("#specialList"),
+    rows
+      .map((p) => {
+        const team = D.teamById(data, p.teamId);
+        return `<div class="special-row">
+        <span class="pos-tag ${e(p.pos)}">${e(p.pos)}</span>
+        <input class="input nm" value="${e(p.name)}" data-sname="${e(p.id)}"
+               aria-label="Special player name" />
+        <select class="input pos" data-spos="${e(p.id)}" aria-label="${e(p.name)} position">
+          ${D.POSITIONS.map(
+            (pos) =>
+              `<option value="${pos}"${p.pos === pos ? " selected" : ""}>${e(
+                D.POSITION_LABEL[pos]
+              )}</option>`
+          ).join("")}
+        </select>
+        <select class="input tm" data-steam="${e(p.id)}" aria-label="${e(p.name)} team">
+          <option value="">— not playing —</option>
+          ${teams
+            .map(
+              (t) =>
+                `<option value="${e(t.id)}"${p.teamId === t.id ? " selected" : ""}>${e(t.name)}</option>`
+            )
+            .join("")}
+        </select>
+        <button class="btn btn--sm btn--primary" data-ssave="${e(p.id)}" type="button">Save</button>
+        <span class="faint" style="flex-basis:100%">${
+          team
+            ? `Playing for <b>${e(team.name)}</b> — free, and doesn't use one of their ${
+                D.auctionState(data)[team.id].squadSize
+              } squad slots.`
+            : "Not assigned — pick a team here if they turn up on the day."
+        }</span>
+      </div>`;
+      })
+      .join("")
   );
 }
 
@@ -361,6 +431,35 @@ function wire() {
         [`players/${p.id}/price`]: null,
       });
       toast(`${p.name} returned to the pool.`);
+    } catch (err) {
+      toast(`Could not save: ${err.message}`, "err");
+    }
+  });
+
+  // Special players — name, position and which team they turn out for.
+  $("#specialList").addEventListener("click", async (ev) => {
+    const b = ev.target.closest("[data-ssave]");
+    if (!b) return;
+    const id = b.dataset.ssave;
+    const name = $(`[data-sname="${id}"]`).value.trim();
+    const pos = $(`[data-spos="${id}"]`).value;
+    const teamId = $(`[data-steam="${id}"]`).value || null;
+    if (!name) return toast("A special player still needs a name.", "err");
+
+    const res = D.validateSpecial(data, id, teamId);
+    if (!res.ok) return toast(res.error, "err");
+
+    const wasOn = D.playerById(data, id)?.teamId || null;
+    try {
+      await writeMany({
+        [`players/${id}/name`]: name,
+        [`players/${id}/pos`]: pos,
+        [`players/${id}/teamId`]: teamId,
+        [`players/${id}/price`]: 0, // free, always — never touches a budget
+      });
+      const team = D.teamById(data, teamId);
+      toast(team ? `${name} added to ${team.name}.` : `${name} saved — not assigned to a team.`);
+      if (teamId && teamId !== wasOn) justBought = teamId;
     } catch (err) {
       toast(`Could not save: ${err.message}`, "err");
     }

@@ -291,6 +291,43 @@
   color: #ff9166;
 }
 
+/* ---- Special players ------------------------------------------------------ */
+.special-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.special-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  border: 1px dashed rgba(232, 195, 92, 0.38);
+  flex-wrap: wrap;
+}
+.special-row .nm {
+  flex: 1 1 130px;
+  min-width: 90px;
+}
+.special-row .pos {
+  flex: 0 0 auto;
+  width: 132px;
+}
+.special-row .tm {
+  flex: 1 1 140px;
+  min-width: 110px;
+}
+@media (max-width: 620px) {
+  .special-row .nm,
+  .special-row .pos,
+  .special-row .tm {
+    flex: 1 1 100%;
+    width: auto;
+  }
+}
+
 /* ---- Jerseys -------------------------------------------------------------- */
 .jersey-grid {
   display: grid;

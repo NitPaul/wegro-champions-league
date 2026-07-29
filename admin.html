@@ -116,7 +116,8 @@
           <h2>No tournament in the database</h2>
           <p class="muted">
             Load the WeGro Champions League 2026 setup — 4 teams, the 25-player auction pool,
-            6 round-robin fixtures and the Final. You can edit everything afterwards.
+            6 round-robin fixtures, the Final and the chairman as an unassigned special player.
+            You can edit everything afterwards.
           </p>
           <button class="btn btn--primary" id="seedBtn" type="button">Load tournament</button>
         </div>
@@ -184,6 +185,20 @@
               </div>
               <div class="hr"></div>
               <div id="poolList" class="pool"></div>
+            </div>
+
+            <div class="card" id="specialCard" hidden>
+              <div class="spread">
+                <h3 class="card__title" style="margin: 0">Special players</h3>
+                <span class="faint">Free guests — no budget, no squad slot, no position limit</span>
+              </div>
+              <div class="hr"></div>
+              <div id="specialList" class="special-list"></div>
+              <p class="faint" style="margin: 10px 0 0">
+                Assign one to any team at any time, including on match day, and move or
+                remove them again just as freely. They never affect a captain's 100 BDT
+                or a squad's legality.
+              </p>
             </div>
 
             <div class="card">
@@ -332,7 +347,10 @@
               <div class="danger-row">
                 <div class="grow">
                   <b>Reset the auction</b>
-                  <div class="faint">Returns every player to the pool and refunds every budget.</div>
+                  <div class="faint">
+                    Returns every player to the pool, refunds every budget and takes any special
+                    player back out of their team.
+                  </div>
                 </div>
                 <button class="btn btn--danger" id="resetAuction" type="button">Reset auction</button>
               </div>
