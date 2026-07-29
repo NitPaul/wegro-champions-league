@@ -20,6 +20,76 @@ export const STATUS_LABEL = {
   ft: "Full-time",
 };
 
+/* ------------------------------------------------------------ match actions */
+
+/**
+ * Where a goal was struck from. Laid out as the attacking third seen from
+ * behind the scorer: the top row is far from goal, the bottom row is the box.
+ * The referee taps a cell on a pitch diagram, so these keys are grid positions,
+ * not free text.
+ */
+export const ZONES = [
+  ["lw", "Left wing"],
+  ["lr", "Long range"],
+  ["rw", "Right wing"],
+  ["lb", "Left of box"],
+  ["ib", "Inside the box"],
+  ["rb", "Right of box"],
+  ["pk", "Penalty spot"],
+];
+export const ZONE_LABEL = Object.fromEntries(ZONES);
+
+/** Everything the referee can log. Goals move the scoreline; the rest do not. */
+export const ACTION_LABEL = {
+  goal: "Goal",
+  penalty_goal: "Punctuality penalty",
+  save: "Save",
+  clearance: "Clearance",
+};
+export const ACTION_ICON = { goal: "⚽", penalty_goal: "⏱", save: "🧤", clearance: "🛡" };
+
+/** Does this event change the score? Saves and clearances must never count. */
+export const isGoalEvent = (ev) => ev?.type === "goal" || ev?.type === "penalty_goal";
+
+/* ----------------------------------------------------------- award scoring */
+
+/**
+ * One points table drives all four medals — the same numbers, filtered
+ * differently, so a player can check their own total from the match log.
+ *
+ * The weights are deliberately generous to the unglamorous jobs. A keeper who
+ * makes eight saves behind a beaten defence out-scores a striker who taps in
+ * three, which is the point: Golden Ball has to be winnable from any position,
+ * or it is just the Golden Boot with a longer name.
+ *
+ * Every value is editable in admin Settings, so nothing here is a decision the
+ * organisers are stuck with.
+ */
+export const DEFAULT_POINTS = {
+  goal: 5,
+  assist: 3,
+  save: 2,
+  clearance: 1,
+  cleanSheetGK: 5,
+  cleanSheetDEF: 3,
+  ownGoal: -3,
+  concededGK: -1,
+};
+
+/** Order and labels for the points table wherever it is shown or edited. */
+export const POINT_FIELDS = [
+  ["goal", "Goal"],
+  ["assist", "Assist"],
+  ["save", "Save"],
+  ["clearance", "Clearance"],
+  ["cleanSheetGK", "Clean sheet — goalkeeper"],
+  ["cleanSheetDEF", "Clean sheet — defender"],
+  ["ownGoal", "Own goal"],
+  ["concededGK", "Goal conceded — goalkeeper"],
+];
+
+export const getPoints = (data) => ({ ...DEFAULT_POINTS, ...(data?.settings?.points || {}) });
+
 /* ------------------------------------------------------------- match clock */
 
 /** The periods a match moves through, in order. Extra time is opt-in. */
@@ -249,6 +319,7 @@ export function seed() {
       halfSeconds: 480,
       breakSeconds: 120,
       extraSeconds: 300,
+      points: DEFAULT_POINTS,
     },
     teams,
     players,
@@ -462,14 +533,22 @@ export function allEvents(data) {
 
 export const matchEvents = (m) => toArray(m?.events);
 
-/** Goals logged for one side of a match (used for the tally-mismatch warning). */
+/**
+ * Goals logged for one side of a match (used for the tally-mismatch warning).
+ *
+ * Only goal events count. The match log also carries saves and clearances, and
+ * counting those here would make every match look like the scoreline was wrong.
+ */
 export function loggedGoals(data, match) {
   const { home, away } = matchSides(data, match);
-  const evs = matchEvents(match);
+  const evs = matchEvents(match).filter(isGoalEvent);
   const count = (teamId) =>
     teamId ? evs.filter((e) => e.teamId === teamId).length : 0;
   return { home: count(home?.id), away: count(away?.id) };
 }
+
+/** Just the goals from a match log, in the order they were scored. */
+export const goalEvents = (m) => matchEvents(m).filter(isGoalEvent);
 
 /** Does the logged scorer list add up to the scoreline? */
 export function eventTally(data, match) {
@@ -548,6 +627,143 @@ export function cleanSheets(data) {
     .sort((a, b) => b.value - a.value || a.conceded - b.conceded);
 }
 
+/* ------------------------------------------------------- the points engine */
+
+/** Clean sheets and goals conceded, per team, from full-time matches only. */
+function teamDefensive(data) {
+  const out = {};
+  for (const t of teamsList(data)) out[t.id] = { sheets: 0, conceded: 0, played: 0 };
+
+  for (const m of matchesList(data)) {
+    if (!isPlayed(m)) continue;
+    const { home, away } = matchSides(data, m);
+    const hs = Number(m.homeScore);
+    const as = Number(m.awayScore);
+    const bump = (team, against) => {
+      if (!team || !out[team.id]) return;
+      out[team.id].played++;
+      out[team.id].conceded += against;
+      if (against === 0) out[team.id].sheets++;
+    };
+    bump(home, as);
+    bump(away, hs);
+  }
+  return out;
+}
+
+/**
+ * Every player's match record and award points, highest first.
+ *
+ * This is the single source the four medals are read from, so a player can add
+ * up their own row from the match log and get the same answer the site shows.
+ * Ties break on points → goals → assists → name, which is deterministic: the
+ * order never changes between two renders of identical data.
+ */
+export function playerStats(data) {
+  const w = getPoints(data);
+  const def = teamDefensive(data);
+  const rows = new Map();
+
+  for (const p of playersList(data)) {
+    rows.set(p.id, {
+      playerId: p.id,
+      player: p,
+      team: teamById(data, p.teamId),
+      goals: 0,
+      assists: 0,
+      saves: 0,
+      clearances: 0,
+      ownGoals: 0,
+      cleanSheets: 0,
+      conceded: 0,
+      points: 0,
+    });
+  }
+
+  const at = (id) => (id ? rows.get(id) : null);
+
+  for (const ev of allEvents(data)) {
+    if (ev.type === "goal") {
+      // An own goal is logged against the team that benefited, so it usually has
+      // no scorer at all. Only a deliberately attributed one costs a player.
+      if (ev.ownGoal) {
+        const r = at(ev.scorerId);
+        if (r) r.ownGoals++;
+      } else {
+        const r = at(ev.scorerId);
+        if (r) r.goals++;
+      }
+      const a = at(ev.assistId);
+      if (a) a.assists++;
+    } else if (ev.type === "save") {
+      const r = at(ev.playerId);
+      if (r) r.saves++;
+    } else if (ev.type === "clearance") {
+      const r = at(ev.playerId);
+      if (r) r.clearances++;
+    }
+  }
+
+  // Clean sheets belong to the whole back line, not just the keeper. Guests are
+  // left out: they are not part of a squad's defensive record for the season.
+  for (const r of rows.values()) {
+    const d = def[r.player.teamId];
+    if (!d || isSpecial(r.player)) continue;
+    if (r.player.pos === "GK") {
+      r.cleanSheets = d.sheets;
+      r.conceded = d.conceded;
+    } else if (r.player.pos === "DEF") {
+      r.cleanSheets = d.sheets;
+    }
+  }
+
+  for (const r of rows.values()) {
+    r.points =
+      r.goals * w.goal +
+      r.assists * w.assist +
+      r.saves * w.save +
+      r.clearances * w.clearance +
+      r.ownGoals * w.ownGoal +
+      (r.player.pos === "GK"
+        ? r.cleanSheets * w.cleanSheetGK + r.conceded * w.concededGK
+        : r.player.pos === "DEF"
+        ? r.cleanSheets * w.cleanSheetDEF
+        : 0);
+  }
+
+  return [...rows.values()].sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.goals - a.goals ||
+      b.assists - a.assists ||
+      a.player.name.localeCompare(b.player.name)
+  );
+}
+
+/** Has anyone done anything yet? Used to keep empty tables off the page. */
+export const hasMatchData = (data) =>
+  playerStats(data).some((r) => r.points !== 0 || r.goals || r.saves || r.clearances);
+
+/** Top of a leaderboard, plus whether it is currently a tie. */
+function leader(rows, key = "points") {
+  const live = rows.filter((r) => r[key] > 0);
+  if (!live.length) return null;
+  const top = live[0];
+  return { ...top, tied: live.filter((r) => r[key] === top[key]).length > 1 };
+}
+
+/** Where goals were struck from — feeds the pitch-zone chart. */
+export function goalsByZone(data) {
+  const counts = Object.fromEntries(ZONES.map(([k]) => [k, 0]));
+  let unknown = 0;
+  for (const ev of allEvents(data)) {
+    if (ev.type !== "goal" || ev.ownGoal) continue;
+    if (counts[ev.zone] != null) counts[ev.zone]++;
+    else unknown++;
+  }
+  return { counts, unknown, total: Object.values(counts).reduce((n, v) => n + v, 0) };
+}
+
 /** Goals broken down by the scorer's position. Rule-4 penalty goals are excluded. */
 export function goalsByPosition(data) {
   const counts = Object.fromEntries(POSITIONS.map((p) => [p, 0]));
@@ -558,24 +774,38 @@ export function goalsByPosition(data) {
   return POSITIONS.map((pos) => ({ pos, label: POSITION_LABEL[pos], value: counts[pos] }));
 }
 
-/** The three medals from deck Rule 6. */
+/**
+ * The four medals (deck Rule 6, plus Best Defender).
+ *
+ * All four read the same points table; they differ only in who is eligible and
+ * what they are ranked on. Golden Boot stays a pure goal count — it is the one
+ * award where the name promises exactly one thing.
+ *
+ * Golden Ball keeps its manual override: `goldenBallPlayerId` in Settings wins
+ * over the computed leader, because a referee watching the match may see
+ * something the tally cannot. The returned row says which it was.
+ */
 export function awards(data) {
-  const scorers = topScorers(data);
-  const keepers = cleanSheets(data);
-  const settings = getSettings(data);
-  const gbId = settings.goldenBallPlayerId;
+  const all = playerStats(data);
+  const gbId = getSettings(data).goldenBallPlayerId;
+  const picked = gbId ? all.find((r) => r.playerId === gbId) : null;
 
-  const topGoals = scorers[0]?.value || 0;
-  // cleanSheets() is already sorted by sheets desc, then goals conceded asc,
-  // so the winner is simply the first row — provided anyone kept a clean sheet.
-  const bestKeeper = keepers[0] || null;
+  const byGoals = all
+    .filter((r) => r.goals > 0)
+    .sort((a, b) => b.goals - a.goals || b.assists - a.assists || a.player.name.localeCompare(b.player.name));
+  const topGoals = byGoals[0]?.goals || 0;
 
   return {
-    topScorer: topGoals > 0 ? scorers.filter((s) => s.value === topGoals) : [],
-    bestGoalkeeper: bestKeeper && bestKeeper.value > 0 ? bestKeeper : null,
-    goldenBall: gbId
-      ? { player: playerById(data, gbId), team: teamById(data, playerById(data, gbId)?.teamId) }
-      : null,
+    all,
+    goldenBall: picked
+      ? { ...picked, picked: true, tied: false }
+      : (() => {
+          const l = leader(all);
+          return l ? { ...l, picked: false } : null;
+        })(),
+    goldenBoot: byGoals.filter((r) => r.goals === topGoals),
+    goldenGlove: leader(all.filter((r) => r.player.pos === "GK" && !isSpecial(r.player))),
+    bestDefender: leader(all.filter((r) => r.player.pos === "DEF" && !isSpecial(r.player))),
   };
 }
 

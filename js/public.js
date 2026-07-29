@@ -638,38 +638,126 @@ function paintStats(data) {
       : `<div class="empty">Goalkeepers appear once squads are set.</div>`
   );
 
+  paintAwards(data);
+  paintPointsTable(data);
+}
+
+/* --------------------------------------------------------------- the medals */
+
+/** A one-line summary of how a player earned their total. */
+function breakdown(r) {
+  return [
+    r.goals ? `${r.goals} goal${r.goals === 1 ? "" : "s"}` : "",
+    r.assists ? `${r.assists} assist${r.assists === 1 ? "" : "s"}` : "",
+    r.saves ? `${r.saves} save${r.saves === 1 ? "" : "s"}` : "",
+    r.clearances ? `${r.clearances} clearance${r.clearances === 1 ? "" : "s"}` : "",
+    r.cleanSheets ? `${r.cleanSheets} clean sheet${r.cleanSheets === 1 ? "" : "s"}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function paintAwards(data) {
   const aw = D.awards(data);
-  const card = (medal, label, winner, sub) =>
+
+  const card = (medal, label, winner, sub, note) =>
     `<div class="award${winner ? "" : " tbd"}">
       <div class="medal">${medal}</div>
       <div class="label">${e(label)}</div>
       <div class="winner">${winner ? e(winner) : "To be decided"}</div>
       ${winner && sub ? `<div class="sub">${e(sub)}</div>` : ""}
+      ${winner && note ? `<div class="award-note">${e(note)}</div>` : ""}
     </div>`;
 
-  const ts = aw.topScorer;
+  // A tie is stated rather than silently broken — the alphabetical order that
+  // settles it is a rendering detail, not a result.
+  const tie = (r) => (r?.tied ? "tied on points" : "");
+  const boot = aw.goldenBoot;
+
   setHTML(
     $("#awards"),
     card(
-      "⚽",
-      "Top scorer",
-      ts.length ? ts.map((x) => x.player.name).join(" & ") : null,
-      ts.length ? `${ts[0].value} goal${ts[0].value === 1 ? "" : "s"}` : ""
+      "🏅",
+      "Golden Ball",
+      aw.goldenBall?.player?.name || null,
+      aw.goldenBall ? `${aw.goldenBall.points} pts · ${aw.goldenBall.team?.name || ""}` : "",
+      aw.goldenBall?.picked ? "organisers' pick" : tie(aw.goldenBall)
     ) +
       card(
-        "🏅",
-        "Golden Ball",
-        aw.goldenBall?.player?.name || null,
-        aw.goldenBall?.team?.name || ""
+        "👟",
+        "Golden Boot",
+        boot.length ? boot.map((x) => x.player.name).join(" & ") : null,
+        boot.length ? `${boot[0].goals} goal${boot[0].goals === 1 ? "" : "s"}` : "",
+        boot.length > 1 ? "shared" : ""
       ) +
       card(
         "🧤",
-        "Best goalkeeper",
-        aw.bestGoalkeeper?.player?.name || null,
-        aw.bestGoalkeeper
-          ? `${aw.bestGoalkeeper.value} clean sheet${aw.bestGoalkeeper.value === 1 ? "" : "s"}`
-          : ""
+        "Golden Glove",
+        aw.goldenGlove?.player?.name || null,
+        aw.goldenGlove ? `${aw.goldenGlove.points} pts · ${aw.goldenGlove.team?.name || ""}` : "",
+        aw.goldenGlove ? breakdown(aw.goldenGlove) : ""
+      ) +
+      card(
+        "🛡",
+        "Best Defender",
+        aw.bestDefender?.player?.name || null,
+        aw.bestDefender ? `${aw.bestDefender.points} pts · ${aw.bestDefender.team?.name || ""}` : "",
+        aw.bestDefender ? breakdown(aw.bestDefender) : ""
       )
+  );
+}
+
+/**
+ * The full points ledger. Shown in full rather than as a top-10, because the
+ * whole point of publishing it is that a player can find their own row and
+ * check the maths.
+ */
+function paintPointsTable(data) {
+  const w = D.getPoints(data);
+  $("#pointsKey").textContent = D.POINT_FIELDS.map(
+    ([k, label]) => `${label} ${w[k] > 0 ? "+" : ""}${w[k]}`
+  ).join(" · ");
+
+  const rows = D.playerStats(data).filter(
+    (r) => r.points !== 0 || r.goals || r.saves || r.clearances || r.assists
+  );
+
+  if (!rows.length) {
+    setHTML(
+      $("#pointsTable"),
+      `<div class="empty">Points appear here as the referee logs goals, saves and clearances.</div>`
+    );
+    return;
+  }
+
+  setHTML(
+    $("#pointsTable"),
+    `<div class="tbl-scroll"><table class="tbl tbl--points">
+      <thead><tr>
+        <th>#</th><th>Player</th><th>Team</th>
+        <th><abbr title="Goals">G</abbr></th>
+        <th><abbr title="Assists">A</abbr></th>
+        <th><abbr title="Saves">SV</abbr></th>
+        <th><abbr title="Clearances">CL</abbr></th>
+        <th><abbr title="Clean sheets">CS</abbr></th>
+        <th>Pts</th>
+      </tr></thead>
+      <tbody>${rows
+        .map(
+          (r, i) => `<tr>
+          <td><span class="pos">${i + 1}</span></td>
+          <td><b>${e(r.player.name)}</b> <span class="faint">${e(r.player.pos)}</span></td>
+          <td class="faint">${e(r.team?.name || "—")}</td>
+          <td class="num">${r.goals || ""}</td>
+          <td class="num">${r.assists || ""}</td>
+          <td class="num">${r.saves || ""}</td>
+          <td class="num">${r.clearances || ""}</td>
+          <td class="num">${r.cleanSheets || ""}</td>
+          <td class="num"><b>${r.points}</b></td>
+        </tr>`
+        )
+        .join("")}</tbody>
+    </table></div>`
   );
 }
 

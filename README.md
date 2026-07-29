@@ -245,10 +245,38 @@ break, exactly as Rule 1 says. It counts up and holds at `08:00`, showing stoppa
 (`08:00 +1:23`) like a real football clock. **+1 min stoppage**, **Pause** and **Reset** are all
 one tap, and **Add extra time** appears at full-time if the Final needs it.
 
-To record a goal: tap the big **+1** under the scoring team, then tap **who scored** from that
-squad's players. Two taps, and the scoreline and the scorer save in a single write — so the two
-can never drift apart. Didn't catch the scorer? Tap **Not sure**; the goal still counts and an
-**Add scorer** button waits for you in the match log. There's an **Own goal** button too.
+Under the clock is the **logging pad**: one column per team, so a thumb never has to work out
+which side a button belongs to. The referee's own instructions live in a collapsible
+**📋 Referee — how to use this screen** panel at the top of the tab, together with the live points
+table — so whoever is holding the phone has the whole brief on the same screen, with no separate
+sheet to lose.
+
+**A goal is four taps.** **GOAL** under the scoring team → **who scored** → **where on the pitch**
+→ **who assisted**.
+
+The important part is that *the scoreline is never held hostage*. The goal is written on the
+**first** tap, together with the scorer, in a single write — so the two can never drift apart, and
+a referee who gets pulled back into the match can press **Close** and still have a correct score.
+The last two questions are pure enrichment and both have a **Skip**.
+
+Step 2 is a **pitch diagram**, not a dropdown: the goal mouth at the top, the box on the row
+beneath it, wings and long range below that, plus a **Penalty spot** cell that records the goal as
+a penalty as well as a location. Step 3 lists the squad minus the scorer, because nobody assists
+their own goal.
+
+Didn't catch the scorer? Tap **Not sure**; the goal still counts and an **Add scorer** button waits
+for you in the match log. There's an **Own goal** button too, which skips both follow-ups.
+
+**A save is one tap.** Press **SAVE** under the defending team — a squad has exactly one
+goalkeeper, so there is nothing to disambiguate, and the keeper's name is printed on the button.
+Saves happen constantly; making them a single tap is the difference between a log that gets kept
+and one that gets abandoned by half-time.
+
+**A clearance is two taps**: **CLEARANCE**, then the player, with defenders listed first.
+
+Under each team's buttons is a running count of what they have logged, and everything appears in
+the **Match log** at the bottom, newest first, with a **Remove** on every row. Removing a goal also
+takes it off the scoreline; removing a save leaves the score alone.
 
 Ending a period with **⏭** moves you on; ending the second half sets full-time, which is what
 makes the result count towards the leaderboard.
@@ -264,8 +292,8 @@ the fact, or set a status by hand.
 The **Final fills itself in** — once all six group matches are full-time, the top two teams on
 the leaderboard drop into it automatically. You never pick the finalists by hand.
 
-**Goals tab.** Log who scored, and the assist if there was one. This is what fills the Top Scorer
-and Golden Ball tables on the public site.
+**Goals tab.** The slower fallback for the same job — pick a match, team, scorer and assist from
+dropdowns. Use it to fix something after the fact; on the day, the Match day pad is faster.
 
 The score and the scorer list are kept separate on purpose: during a 16-minute match, getting the
 scoreline right matters more than getting every name. If they disagree, the Matches tab shows an
@@ -274,8 +302,52 @@ amber warning with both numbers, but it never blocks you.
 Awarded a goal for lateness under Rule 4? Use **Add Rule 4 penalty goal** — it counts on the
 scoreline without crediting a player.
 
-**Medals.** Top Scorer and Best Goalkeeper are calculated automatically. Golden Ball is your pick
-— set it in **Settings**.
+### The four medals, and how the points work
+
+Every action the referee logs is worth points, and **one table drives all four medals**. The
+weights are editable in **Settings → Award points**, and they are published on the public Stats
+tab, so a player can add up their own row from the match log and get the same answer the site
+shows.
+
+| Action | Points |
+|---|---|
+| Goal | **+5** |
+| Assist | **+3** |
+| Save | **+2** |
+| Clearance | **+1** |
+| Clean sheet — goalkeeper | **+5** |
+| Clean sheet — defender | **+3** |
+| Own goal | **−3** |
+| Goal conceded — goalkeeper | **−1** |
+
+| Medal | Who is eligible | Ranked on |
+|---|---|---|
+| 🏅 **Golden Ball** | everyone | total points |
+| 👟 **Golden Boot** | everyone | goals only |
+| 🧤 **Golden Glove** | goalkeepers | total points |
+| 🛡 **Best Defender** | defenders | total points |
+
+Two deliberate choices behind those numbers:
+
+**The unglamorous jobs are paid well.** A keeper who makes eight saves behind a beaten defence
+scores 16 and out-ranks a striker who taps in three for 15. That is the point — Golden Ball has to
+be winnable from any position, or it is just the Golden Boot with a longer name. Saves are worth
+double a clearance because a save is a goal prevented, while a clearance is a situation defused.
+
+**A clean sheet belongs to the whole back line**, not just the keeper, so defenders get 3 for one
+too. The keeper carries the risk as well: every goal conceded costs 1, which separates a keeper who
+was genuinely untroubled from one who let in four and made a lot of saves doing it.
+
+Golden Boot stays a pure goal count, because that is the one award whose name promises exactly one
+thing. Ties are stated on the card rather than silently broken.
+
+**Golden Ball can still be overridden.** Set a player in **Settings** and they win it regardless of
+the tally — a referee watching the match may see something a points table cannot. The card then
+reads *organisers' pick* so nobody thinks the maths went wrong. Leave it on *use the points leader*
+to let the log decide.
+
+Nothing is awarded until something has actually been logged, so the cards read **To be decided**
+before kick-off rather than crowning whoever happens to sort first.
 
 ---
 
@@ -492,7 +564,8 @@ Work down this list once. Everything above the line must be done **before the au
 
 **During the tournament**
 
-- [ ] Run every match from the **▶ Match day** tab — kick off, +1, tap the scorer, end the half
+- [ ] Hand the referee the phone on **▶ Match day** and open the 📋 guide with them once
+- [ ] Run every match from that tab — kick off, GOAL/SAVE/CLEARANCE, end the half
 - [ ] After the 6th group match, check the Final auto-filled with the right two teams
 - [ ] Pick the **Golden Ball** in Settings before the medals are handed out
 

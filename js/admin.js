@@ -377,17 +377,26 @@ function renderEvents() {
       ? events
           .map((ev2) => {
             const team = D.teamById(data, ev2.teamId);
-            const scorer = D.playerById(data, ev2.scorerId);
+            // Saves and clearances name their player in a different field from
+            // goals — without this they all read "Unknown" in this list.
+            const actor = D.playerById(data, ev2.scorerId || ev2.playerId);
             const assist = D.playerById(data, ev2.assistId);
             const who =
               ev2.type === "penalty_goal"
                 ? "Punctuality penalty (Rule 4)"
-                : `${scorer?.name || ev2.scorerName || "Unknown"}${ev2.penalty ? " (pen)" : ""}${
+                : ev2.ownGoal
+                ? "Own goal"
+                : `${actor?.name || ev2.scorerName || ev2.playerName || "Unknown"}${
+                    ev2.penalty ? " (pen)" : ""
+                  }${
                     assist ? ` · assist ${assist.name}` : ev2.assistName ? ` · assist ${ev2.assistName}` : ""
                   }`;
-            return `<div class="ev-row">
-              <span>⚽</span>
-              <span class="grow"><b>${e(who)}</b><div class="faint">${e(team?.name || "")}</div></span>
+            const kind = D.ACTION_LABEL[ev2.type] || "Event";
+            return `<div class="ev-row ev-row--${e(ev2.type)}">
+              <span class="ev-ico">${D.ACTION_ICON[ev2.type] || "•"}</span>
+              <span class="grow"><b>${e(who)}</b><div class="faint">${e(kind)}${
+              team ? ` · ${e(team.name)}` : ""
+            }${ev2.zone ? ` · ${e(D.ZONE_LABEL[ev2.zone] || "")}` : ""}</div></span>
               <button class="btn btn--sm btn--danger" data-delev="${e(ev2.id)}" type="button">Remove</button>
             </div>`;
           })
@@ -491,6 +500,17 @@ function renderSettings() {
            <input class="input" type="${type}" id="meta-${k}" value="${e(meta[k] ?? "")}" /></div>`
       ).join("")
     );
+    // Points may be negative (own goal, conceded), so no `min` here.
+    const pts = D.getPoints(data);
+    setHTML(
+      $("#pointsGrid"),
+      D.POINT_FIELDS.map(
+        ([k, label]) =>
+          `<div class="field"><label for="pt-${k}">${e(label)}</label>
+           <input class="input" type="number" step="1" inputmode="numeric" id="pt-${k}"
+                  value="${e(String(pts[k]))}" /></div>`
+      ).join("")
+    );
     $("#setAuctionOpen").checked = Boolean(s.auctionOpen);
     settingsPainted = true;
   }
@@ -500,7 +520,7 @@ function renderSettings() {
   const keep = gb.value || s.goldenBallPlayerId || "";
   setHTML(
     gb,
-    `<option value="">— not decided —</option>` +
+    `<option value="">— use the points leader —</option>` +
       D.teamsList(data)
         .map((t) => {
           const squad = D.teamPlayers(data, t.id);
@@ -555,6 +575,21 @@ $("#saveSettings").addEventListener("click", async () => {
   try {
     await writeMany(patch);
     toast("Settings saved.");
+  } catch (ex) {
+    toast(friendlyError(ex), "err");
+  }
+});
+
+$("#savePoints").addEventListener("click", async () => {
+  const patch = {};
+  for (const [k, label] of D.POINT_FIELDS) {
+    const v = Number($(`#pt-${k}`).value);
+    if (!Number.isInteger(v)) return toast(`"${label}" must be a whole number.`, "err");
+    patch[`settings/points/${k}`] = v;
+  }
+  try {
+    await writeMany(patch);
+    toast("Award points saved.");
   } catch (ex) {
     toast(friendlyError(ex), "err");
   }

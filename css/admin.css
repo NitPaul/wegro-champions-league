@@ -538,56 +538,238 @@
   margin-bottom: 16px;
 }
 
-.goal-row {
+/* ---- The referee's logging pad --------------------------------------------
+   Two columns, one per team, so a thumb never has to work out which side a
+   button belongs to. Targets are deliberately large: this is used one-handed,
+   outdoors, while watching a match. */
+.act-card {
+  padding: 12px;
+}
+.act-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
-.goal-btn {
+.act-team {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.act-head {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--mint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.act-team--away .act-head {
+  color: var(--wg-orange);
+}
+.act {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 14px 10px;
-  border-radius: var(--radius);
+  justify-content: center;
+  gap: 1px;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line-strong);
   background: var(--surface-2);
   color: var(--text);
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.15s ease;
-  min-height: 68px;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  min-width: 0;
 }
-.goal-btn:hover:not(:disabled) {
+.act:hover:not(:disabled) {
   background: var(--surface-3);
 }
-.goal-btn:active:not(:disabled) {
-  transform: scale(0.97);
+.act:active:not(:disabled) {
+  transform: scale(0.96);
 }
-.goal-btn:disabled {
+.act:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.goal-btn .plus {
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--mint);
+.act-ico {
+  font-size: 20px;
+  line-height: 1.1;
 }
-.goal-btn .nm {
-  font-size: 12.5px;
-  font-weight: 700;
+.act-lbl {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+.act-sub {
+  font-size: 10px;
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
 }
-.goal-btn--away .plus {
-  color: var(--wg-orange);
+.act--goal {
+  min-height: 74px;
+  border-color: rgba(63, 217, 164, 0.4);
+  background: rgba(63, 217, 164, 0.09);
+}
+.act--goal .act-ico {
+  font-size: 26px;
+}
+.act--goal .act-lbl {
+  font-size: 15px;
+}
+.act-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 7px;
+}
+.act--save {
+  border-color: rgba(93, 160, 232, 0.4);
+}
+.act--clear {
+  border-color: rgba(232, 195, 92, 0.38);
+}
+.act-tally {
+  text-align: center;
+  font-size: 11px;
+}
+@media (max-width: 560px) {
+  .act-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .act-lbl {
+    font-size: 11px;
+  }
 }
 .console-hint {
   margin: 10px 0 0;
   font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* ---- The referee's crib sheet ---------------------------------------------
+   Collapsed by default so it never sits between the referee and the buttons,
+   but present on the same screen so there is no separate sheet to lose. */
+.ref-guide {
+  border-color: rgba(232, 195, 92, 0.34);
+}
+.ref-guide > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+}
+.ref-guide > summary::-webkit-details-marker {
+  display: none;
+}
+.ref-guide > summary::after {
+  content: " ▾";
+  color: var(--muted);
+}
+.ref-guide[open] > summary::after {
+  content: " ▴";
+}
+.ref-steps {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+.ref-steps b {
+  color: var(--text);
+}
+.ref-points {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 5px 14px;
+  margin-top: 9px;
+}
+.ref-pt {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--line);
+  font-size: 13px;
+}
+.ref-pt b {
+  font-family: var(--font-display);
+  color: var(--mint);
+  font-variant-numeric: tabular-nums;
+}
+.ref-pt b.is-neg {
+  color: #ff9d9d;
+}
+
+/* ---- Goal zone picker -----------------------------------------------------
+   A pitch seen from behind the scorer: the goal is at the top, the box is the
+   row under it, and long range is the row below that. */
+.zone-pick {
+  display: grid;
+  gap: 8px;
+}
+.zone-goal {
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--mint);
+  padding: 5px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, rgba(63, 217, 164, 0.22), transparent);
+  border-top: 3px solid var(--mint);
+}
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.zone-cell {
+  padding: 16px 6px;
+  border-radius: 8px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+  min-height: 58px;
+}
+.zone-cell:hover {
+  background: rgba(63, 217, 164, 0.12);
+  border-color: var(--mint);
+}
+.zone-cell:active {
+  transform: scale(0.96);
+}
+.zone-extra {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.zone-cell--pk {
+  flex: 1 1 auto;
+  border-style: solid;
+  border-color: rgba(232, 195, 92, 0.45);
+  min-height: 44px;
+}
+.zone-cell--pk span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.zone-extra .btn {
+  flex: 0 0 auto;
 }
 
 /* ---- Scorer picker -------------------------------------------------------- */
@@ -674,6 +856,29 @@
 }
 .ev-row .grow b {
   font-weight: 600;
+}
+/* The log mixes goals with saves and clearances, so each row is colour-keyed
+   to its action — a referee scanning for a mistake looks for the icon first. */
+.ev-ico {
+  flex: 0 0 auto;
+  width: 26px;
+  text-align: center;
+  font-size: 15px;
+}
+.ev-row--save {
+  border-left: 3px solid rgba(93, 160, 232, 0.55);
+  padding-left: 7px;
+}
+.ev-row--clearance {
+  border-left: 3px solid rgba(232, 195, 92, 0.5);
+  padding-left: 7px;
+}
+.ev-row--goal {
+  border-left: 3px solid rgba(63, 217, 164, 0.6);
+  padding-left: 7px;
+}
+.picker-btn.is-hint {
+  border-color: rgba(232, 195, 92, 0.45);
 }
 
 /* ---- Settings ------------------------------------------------------------- */

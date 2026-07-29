@@ -209,6 +209,45 @@
 
           <!-- ----------------------------------------------------- MATCH DAY -->
           <section class="panel" role="tabpanel" id="panel-live" aria-labelledby="tab-live" hidden>
+            <details class="card ref-guide">
+              <summary><b>📋 Referee — how to use this screen</b></summary>
+              <ol class="ref-steps">
+                <li>
+                  <b>Pick your match</b> below, then press <b>▶ Kick off</b>. Press
+                  <b>⏭ End first half</b> at the break, <b>▶ Resume</b> for the second, and
+                  <b>⏭ End the match</b> at full-time. That is all the clock needs.
+                </li>
+                <li>
+                  <b>A goal is four taps.</b> <b>GOAL</b> under the scoring team → tap
+                  <b>who scored</b> → tap <b>where on the pitch</b> → tap <b>who assisted</b>.
+                  <em>The score goes up on the first tap</em>, so if play restarts before you
+                  finish, just press <b>Close</b> — the goal is already saved. The last two
+                  questions can always be skipped.
+                </li>
+                <li>
+                  <b>A save is one tap.</b> Press <b>SAVE</b> under the defending team. It goes
+                  to that team's goalkeeper, whose name is printed on the button.
+                </li>
+                <li>
+                  <b>A clearance is two taps.</b> Press <b>CLEARANCE</b>, then the player who
+                  cleared it. Defenders are listed first.
+                </li>
+                <li>
+                  <b>Made a mistake?</b> Everything you log appears in the <b>Match log</b> at
+                  the bottom, newest first, with a <b>Remove</b> button. Removing a goal also
+                  takes it back off the scoreline. Nothing is ever stuck.
+                </li>
+              </ol>
+              <p class="faint" style="margin: 12px 0 0">
+                Log <em>every</em> save and clearance you see — they are what decide the
+                <b>Golden Glove</b> and <b>Best Defender</b> medals. If you miss one, it simply
+                is not counted; nothing breaks.
+              </p>
+              <div class="hr"></div>
+              <b>What each action is worth</b>
+              <div class="ref-points" id="refPoints"></div>
+            </details>
+
             <div class="card">
               <div class="field">
                 <label for="liveMatch">Which match are you running?</label>
@@ -220,9 +259,13 @@
 
             <div class="card">
               <div class="spread">
-                <h3 class="card__title" style="margin: 0">Goals in this match</h3>
+                <h3 class="card__title" style="margin: 0">Match log</h3>
                 <span id="liveTally"></span>
               </div>
+              <p class="faint" style="margin: 6px 0 0">
+                Newest first. Tap <b>Remove</b> to undo anything — removing a goal takes it
+                off the scoreline too.
+              </p>
               <div class="hr"></div>
               <div id="liveEvents"></div>
             </div>
@@ -297,11 +340,29 @@
               </label>
               <div class="hr"></div>
               <div class="field">
-                <label for="setGoldenBall">Golden Ball — Best Player (your pick)</label>
+                <label for="setGoldenBall">Golden Ball — override the computed winner</label>
                 <select class="input" id="setGoldenBall"></select>
+                <p class="faint" style="margin: 6px 0 0">
+                  Leave on <b>— use the points leader —</b> to let the match log decide.
+                  Pick a player only if you want to overrule it.
+                </p>
               </div>
               <button class="btn btn--primary" id="saveSettings" type="button" style="margin-top: 14px">
                 Save settings
+              </button>
+            </div>
+
+            <div class="card">
+              <h3 class="card__title">Award points</h3>
+              <p class="faint" style="margin: 0 0 12px">
+                What each action is worth. One table drives all four medals: <b>Golden Ball</b>
+                is the highest total of anyone, <b>Golden Glove</b> the highest among
+                goalkeepers, <b>Best Defender</b> the highest among defenders, and
+                <b>Golden Boot</b> is simply the most goals. Negatives are allowed.
+              </p>
+              <div class="settings-grid" id="pointsGrid"></div>
+              <button class="btn btn--primary" id="savePoints" type="button" style="margin-top: 14px">
+                Save points
               </button>
             </div>
 

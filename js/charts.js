@@ -13,6 +13,20 @@
      - Goal difference is polarity, not magnitude, so it gets the diverging pair:
        blue above the line, red below, with a neutral zero baseline. Green/red
        is the classic colour-blind trap and is avoided on purpose.
+     - Goals by pitch zone is magnitude over a map, so it is sequential: ONE hue
+       (mint) stepped light to dark, never a rainbow.
+     - Saves vs clearances is the only two-series chart here, so it is the only
+       one with a legend — and each segment is labelled as well, so identity is
+       never carried by colour alone.
+
+   On the palette: these steps sit above the generic dark-mode lightness band,
+   deliberately. The card surface (#0B3B36) is far darker than a typical dark
+   theme, so in-band steps drop under 3:1 against it — the band and the contrast
+   floor pull opposite ways here, and contrast wins. What actually decides
+   whether two series can be told apart is separation, and the blue/gold pair
+   measures ΔE 31.6 under protanopia and 35.4 in normal vision, comfortably
+   above the ≥8 target.
+
    Every value is directly labelled, so no number is trapped behind a tooltip.
    ========================================================================== */
 
@@ -178,6 +192,83 @@ function divergingChart({ rows, unit = "" }) {
   </div>`;
 }
 
+/**
+ * Goals by pitch zone — magnitude over a map, so a sequential single-hue scale.
+ * Laid out exactly like the referee's picker: goal at the top, the box on the
+ * row beneath it, long range below that. Every cell carries its own count, so
+ * the colour is a summary and never the only way to read a value.
+ */
+function zoneChart({ counts, total, unknown }) {
+  const max = Math.max(1, ...Object.values(counts));
+  const cell = (k) => {
+    const v = counts[k] || 0;
+    // Steps of one hue. 0 stays at the surface so "none" never looks like "some".
+    // The top step stops well short of opaque: the label sits ON the fill, and
+    // light text needs the dark card to keep showing through behind it.
+    const pct = v / max;
+    const alpha = v === 0 ? 0 : 0.14 + pct * 0.36;
+    const share = total ? Math.round((v / total) * 100) : 0;
+    return `<div class="zone-cell-c" tabindex="0"
+      data-tip="${e(D.ZONE_LABEL[k])} — ${v} goal${v === 1 ? "" : "s"}${
+      total ? ` (${share}% of ${total})` : ""
+    }"
+      style="--fill:rgba(63,217,164,${alpha.toFixed(3)})">
+      <b class="num">${v}</b><span>${e(D.ZONE_LABEL[k])}</span>
+    </div>`;
+  };
+
+  return `<div class="zone-chart">
+    <div class="zone-chart-goal">▲ GOAL</div>
+    <div class="zone-chart-grid">
+      ${cell("lb")}${cell("ib")}${cell("rb")}
+      ${cell("lw")}${cell("lr")}${cell("rw")}
+    </div>
+    ${cell("pk")}
+    ${
+      unknown
+        ? `<p class="chart-note faint">${unknown} goal${
+            unknown === 1 ? "" : "s"
+          } logged without a location.</p>`
+        : ""
+    }
+  </div>`;
+}
+
+/**
+ * Two series stacked into one bar: the parts of a player's defensive workload.
+ * A legend is mandatory at two series, and each segment is labelled too. The 2px
+ * gap between segments is a surface-coloured spacer, not a border, so the split
+ * reads even where the two hues meet.
+ */
+function stackChart({ rows }) {
+  const top = Math.max(1, ...rows.map((r) => r.a + r.b));
+  return `<div class="stack">
+    <div class="chart-legend">
+      <span><i class="key key--saves"></i> Saves</span>
+      <span><i class="key key--clears"></i> Clearances</span>
+    </div>
+    ${rows
+      .map((r) => {
+        const seg = (v, cls) =>
+          v
+            ? `<span class="stack-seg ${cls}" style="--pct:${(v / top) * 100}%">${
+                v / top > 0.12 ? `<b>${v}</b>` : ""
+              }</span>`
+            : "";
+        return `<div class="bar-row" tabindex="0" data-tip="${e(
+          `${r.label} — ${r.a} save${r.a === 1 ? "" : "s"}, ${r.b} clearance${
+            r.b === 1 ? "" : "s"
+          }`
+        )}">
+        <span class="bar-label">${e(r.label)}<span class="bar-sub">${e(r.sub)}</span></span>
+        <span class="bar-track stack-track">${seg(r.a, "is-a")}${seg(r.b, "is-b")}</span>
+        <span class="bar-value num">${r.a + r.b}</span>
+      </div>`;
+      })
+      .join("")}
+  </div>`;
+}
+
 /** A ratio against a fixed limit — a meter, not a chart. */
 /** `flag` is an optional red badge appended to the sub-line (still escaped). */
 function meter({ label, sub, flag, used, limit, tip }) {
@@ -274,7 +365,37 @@ export function renderCharts(data) {
       : empty("Goals are grouped by the scorer's position once they're logged.")
   );
 
-  /* 5 — Auction spend. A ratio against a fixed limit per team. */
+  /* 5 — Where goals are scored from. Sequential: one hue over a pitch map. */
+  const zones = D.goalsByZone(data);
+  setChart(
+    "chartZones",
+    zones.total || zones.unknown
+      ? zoneChart(zones)
+      : empty("The referee records where every goal was struck from.")
+  );
+
+  /* 6 — Defensive workload. The one two-series chart, so the one with a legend. */
+  const def = D.playerStats(data)
+    .filter((r) => r.saves || r.clearances)
+    .sort((a, b) => b.saves + b.clearances - (a.saves + a.clearances))
+    .slice(0, 8);
+  setChart(
+    "chartDefensive",
+    def.length
+      ? stackChart({
+          // The segments and the legend already carry the split, so the sub-line
+          // stays short — a long one just gets clipped by the label column.
+          rows: def.map((r) => ({
+            label: r.player.name,
+            sub: r.team?.name || "",
+            a: r.saves,
+            b: r.clearances,
+          })),
+        })
+      : empty("Saves and clearances appear here once the matches begin.")
+  );
+
+  /* 7 — Auction spend. A ratio against a fixed limit per team. */
   const s = D.getSettings(data);
   const st = D.auctionState(data);
   setChart(
