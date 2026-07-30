@@ -392,9 +392,11 @@ function renderEvents() {
                     assist ? ` · assist ${assist.name}` : ev2.assistName ? ` · assist ${ev2.assistName}` : ""
                   }`;
             const kind = D.ACTION_LABEL[ev2.type] || "Event";
-            return `<div class="ev-row ev-row--${e(ev2.type)}">
+            return `<div class="ev-row ev-row--${e(ev2.type)}${ev2.critical ? " is-critical" : ""}">
               <span class="ev-ico">${D.ACTION_ICON[ev2.type] || "•"}</span>
-              <span class="grow"><b>${e(who)}</b><div class="faint">${e(kind)}${
+              <span class="grow"><b>${e(who)}</b>${
+              ev2.critical ? ` <span class="flag-crit">⭐ critical</span>` : ""
+            }<div class="faint">${e(kind)}${
               team ? ` · ${e(team.name)}` : ""
             }${ev2.zone ? ` · ${e(D.ZONE_LABEL[ev2.zone] || "")}` : ""}</div></span>
               <button class="btn btn--sm btn--danger" data-delev="${e(ev2.id)}" type="button">Remove</button>
@@ -515,23 +517,7 @@ function renderSettings() {
     settingsPainted = true;
   }
 
-  // Golden Ball options (rebuilt each time — squads change during the auction).
-  const gb = $("#setGoldenBall");
-  const keep = gb.value || s.goldenBallPlayerId || "";
-  setHTML(
-    gb,
-    `<option value="">— use the points leader —</option>` +
-      D.teamsList(data)
-        .map((t) => {
-          const squad = D.teamPlayers(data, t.id);
-          if (!squad.length) return "";
-          return `<optgroup label="${e(t.name)}">${squad
-            .map((p) => `<option value="${e(p.id)}">${e(p.name)} (${e(p.pos)})</option>`)
-            .join("")}</optgroup>`;
-        })
-        .join("")
-  );
-  gb.value = [...gb.options].some((o) => o.value === keep) ? keep : "";
+  renderMedals(s);
 
   // Teams & captains
   setHTML(
@@ -570,11 +556,85 @@ $("#saveSettings").addEventListener("click", async () => {
     return toast("Minimum per position cannot exceed the maximum.", "err");
 
   patch["settings/auctionOpen"] = $("#setAuctionOpen").checked;
-  patch["settings/goldenBallPlayerId"] = $("#setGoldenBall").value || null;
 
   try {
     await writeMany(patch);
     toast("Settings saved.");
+  } catch (ex) {
+    toast(friendlyError(ex), "err");
+  }
+});
+
+/* ------------------------------------------------------------------ medals */
+
+/**
+ * One override select per medal.
+ *
+ * Rebuilt on every render rather than once, because the choices are the squads
+ * and those change all through the auction. Each select shows the player the
+ * match log currently favours, so choosing to overrule it is an informed
+ * decision rather than a blind one — and every medal is equally re-assignable,
+ * since "management decided someone else should have it" applies to any of the
+ * four, not only the Golden Ball.
+ */
+function renderMedals(s) {
+  const aw = D.awards(data);
+  const current = {
+    goldenBall: aw.goldenBall,
+    goldenBoot: aw.goldenBoot[0] || null,
+    goldenGlove: aw.goldenGlove,
+    bestDefender: aw.bestDefender,
+  };
+
+  const options = D.teamsList(data)
+    .map((t) => {
+      const squad = D.teamPlayers(data, t.id);
+      if (!squad.length) return "";
+      return `<optgroup label="${e(t.name)}">${squad
+        .map((p) => `<option value="${e(p.id)}">${e(p.name)} (${e(p.pos)})</option>`)
+        .join("")}</optgroup>`;
+    })
+    .join("");
+
+  // Keep whatever is half-chosen on screen; fall back to what is stored.
+  const keep = {};
+  for (const [key, , , setting] of D.MEDALS) {
+    const sel = document.getElementById(`medal-${key}`);
+    keep[key] = sel?.value ?? s[setting] ?? "";
+  }
+
+  setHTML(
+    $("#medalGrid"),
+    D.MEDALS.map(([key, label, medal, setting, basis]) => {
+      const row = current[key];
+      const who = row
+        ? `${row.player.name}${row.picked ? " — your pick" : ` · ${basis}`}`
+        : "nobody yet";
+      return `<div class="field">
+        <label for="medal-${e(key)}">${medal} ${e(label)}</label>
+        <select class="input" id="medal-${e(key)}" data-medal="${e(setting)}">
+          <option value="">— use the match log —</option>${options}
+        </select>
+        <p class="faint" style="margin: 6px 0 0">Currently: <b>${e(who)}</b></p>
+      </div>`;
+    }).join("")
+  );
+
+  for (const [key] of D.MEDALS) {
+    const sel = document.getElementById(`medal-${key}`);
+    if (!sel) continue;
+    sel.value = [...sel.options].some((o) => o.value === keep[key]) ? keep[key] : "";
+  }
+}
+
+$("#saveMedals").addEventListener("click", async () => {
+  const patch = {};
+  for (const [key, , , setting] of D.MEDALS) {
+    patch[`settings/${setting}`] = document.getElementById(`medal-${key}`)?.value || null;
+  }
+  try {
+    await writeMany(patch);
+    toast("Medal winners saved.");
   } catch (ex) {
     toast(friendlyError(ex), "err");
   }

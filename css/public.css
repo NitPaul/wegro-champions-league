@@ -590,6 +590,11 @@ button.fx__body:hover {
   justify-content: flex-end;
   text-align: right;
 }
+/* A critical goal is marked in the match log with the same star the referee
+   tapped, so the two screens read as the same record. */
+.fx__crit {
+  color: var(--gold);
+}
 
 /* ---- Standings ------------------------------------------------------------ */
 .tbl .pos {
@@ -946,12 +951,45 @@ button.fx__body:hover {
 /* ---- Player points ledger -------------------------------------------------
    Wide table, so it scrolls inside its own box rather than pushing the page
    sideways on a phone. */
+.pt-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.pt-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.pt-chip b {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--mint);
+}
+.pt-chip.is-neg b {
+  color: #ff9d9d;
+}
 .tbl-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 .tbl--points {
-  min-width: 560px;
+  /* Nine stat columns plus rank, player and team. Narrower than this and the
+     numbers start wrapping under their own headings. */
+  min-width: 700px;
+}
+/* Numbers only, so they can be tight — it buys the width the names need. */
+.tbl--points th:nth-child(n + 4),
+.tbl--points td:nth-child(n + 4) {
+  padding-left: 6px;
+  padding-right: 6px;
 }
 /* Column heads are abbreviations, so the full word lives in a tooltip — without
    the browser's default dotted underline, which reads as a typo in a table. */

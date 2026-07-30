@@ -267,16 +267,35 @@ their own goal.
 Didn't catch the scorer? Tap **Not sure**; the goal still counts and an **Add scorer** button waits
 for you in the match log. There's an **Own goal** button too, which skips both follow-ups.
 
+**Was it a critical goal?** The "where from" screen carries a **☆ Critical goal** switch — for the
+opener, an equaliser, a winner, or anything in the Final. It is worth a bonus on top of the goal
+(+3 by default). It is a *switch, not a step*: tapping it saves immediately and leaves the referee
+exactly where they were, and it can be turned on or off later from the match log. So a judgement
+call that deserves a moment's thought never has to be made in the two seconds after the ball
+crosses the line — and it can never affect the scoreline, because the goal is already saved by the
+time the switch appears.
+
 **A save is one tap.** Press **SAVE** under the defending team — a squad has exactly one
 goalkeeper, so there is nothing to disambiguate, and the keeper's name is printed on the button.
 Saves happen constantly; making them a single tap is the difference between a log that gets kept
 and one that gets abandoned by half-time.
 
-**A clearance is two taps**: **CLEARANCE**, then the player, with defenders listed first.
+**The other three are two taps each** — press the button, then the player:
 
-Under each team's buttons is a running count of what they have logged, and everything appears in
-the **Match log** at the bottom, newest first, with a **Remove** on every row. Removing a goal also
-takes it off the scoreline; removing a save leaves the score alone.
+| Button | What it means | Who is listed first |
+|---|---|---|
+| 🛡 **CLEARANCE** | a ball hacked off the line or out of the box | defenders |
+| 🎯 **SHOT** | a shot **on target** that did not go in — saved, or off the frame | forwards, then midfielders |
+| 🔑 **CHANCE** | the pass that should have been a goal but was not converted | midfielders, then forwards |
+
+Sorting the likely candidates to the front is not cosmetic — it is what keeps a two-tap action at
+two taps instead of a scan through the whole squad.
+
+Under each team's buttons is a running count of all five actions — `⚽ 2 🧤 3 🛡 1 🎯 4 🔑 1` — with
+anything still on zero dimmed, so what has actually happened this match reads at a glance.
+Everything appears in the **Match log** at the bottom, newest first, with a **Remove** on every row
+and a **☆ Critical** toggle on every goal. Removing a goal also takes it off the scoreline;
+removing a save, shot or chance leaves the score alone.
 
 Ending a period with **⏭** moves you on; ending the second half sets full-time, which is what
 makes the result count towards the leaderboard.
@@ -312,7 +331,10 @@ shows.
 | Action | Points |
 |---|---|
 | Goal | **+5** |
+| Critical goal — *bonus on top of the goal* | **+3** |
 | Assist | **+3** |
+| Chance created | **+2** |
+| Shot on target | **+1** |
 | Save | **+2** |
 | Clearance | **+1** |
 | Clean sheet — goalkeeper | **+5** |
@@ -327,7 +349,7 @@ shows.
 | 🧤 **Golden Glove** | goalkeepers | total points |
 | 🛡 **Best Defender** | defenders | total points |
 
-Two deliberate choices behind those numbers:
+Four deliberate choices behind those numbers:
 
 **The unglamorous jobs are paid well.** A keeper who makes eight saves behind a beaten defence
 scores 16 and out-ranks a striker who taps in three for 15. That is the point — Golden Ball has to
@@ -338,13 +360,27 @@ double a clearance because a save is a goal prevented, while a clearance is a si
 too. The keeper carries the risk as well: every goal conceded costs 1, which separates a keeper who
 was genuinely untroubled from one who let in four and made a lot of saves doing it.
 
+**The near misses are paid one step below the thing they nearly were.** A chance created is an
+assist the striker wasted, so it earns 2 against the assist's 3; a shot on target is a goal the
+keeper stopped, so it earns 1. Both are deliberately cheap, because they happen far more often than
+goals — a big number there would drown out everything else. They are also the reason a midfielder
+who creates all evening without a single goal or assist can still finish near the top.
+
+**A critical goal is a bonus, not a replacement.** Mark one and it is worth 5 + 3 = 8, so the goal
+that settles a match matters more than the fourth in a rout — without letting one moment outweigh a
+keeper's entire evening. It stays visible as its own **★** column in the published ledger, so the
+bonus is never hidden inside a total nobody can reproduce.
+
 Golden Boot stays a pure goal count, because that is the one award whose name promises exactly one
 thing. Ties are stated on the card rather than silently broken.
 
-**Golden Ball can still be overridden.** Set a player in **Settings** and they win it regardless of
-the tally — a referee watching the match may see something a points table cannot. The card then
-reads *organisers' pick* so nobody thinks the maths went wrong. Leave it on *use the points leader*
-to let the log decide.
+**Every medal can be re-assigned by hand.** **Settings → Who gets each medal** has one dropdown per
+award. Leave a medal on *use the match log* and it updates itself all evening. Name a player instead
+and that decision wins — a referee, or management afterwards, may see something a points table
+cannot, or may simply decide the award belongs to someone else. Each dropdown shows who currently
+holds the medal, so overruling it is an informed decision rather than a blind one, and the public
+card then reads *organisers' pick* so nobody thinks the maths went wrong. You can change any of them
+at any time, before or after the presentation.
 
 Nothing is awarded until something has actually been logged, so the cards read **To be decided**
 before kick-off rather than crowning whoever happens to sort first.
@@ -507,6 +543,12 @@ above the 8.0 target):
 - **Goal difference is the one chart showing polarity**, so it gets a diverging pair —
   blue above the line, red below, with a neutral zero baseline. Green-vs-red is the classic
   colour-blind trap and is avoided on purpose.
+- **Goals by pitch zone is magnitude over a map**, so it is sequential: one hue (mint) stepped
+  light to dark, never a rainbow, laid out exactly like the referee's picker.
+- **The two stacked charts** (saves vs clearances, chances vs shots) are the only two-series
+  ones, so they are the only ones with a legend — and every segment is labelled too, so
+  identity never rides on colour alone. They share one blue/gold pair rather than spending four
+  hues on four series: each chart is read against its own legend, not against the other chart.
 - **Every value is printed next to its bar**, so nothing is trapped behind a tooltip. The
   tooltips add detail and work with the keyboard as well as the mouse.
 
@@ -561,13 +603,16 @@ Work down this list once. Everything above the line must be done **before the au
 - [ ] Kick-off time in **Settings** matches reality, so the countdown is honest
 - [ ] Link shared — it previews with the crest in WhatsApp
 - [ ] One practice run: set a match Live, save a score, log a goal, then **Clear** it
+- [ ] Two minutes with the referee on a real phone: log one of each — goal, critical goal, save,
+      clearance, shot, chance — then remove them all again
 
 **During the tournament**
 
 - [ ] Hand the referee the phone on **▶ Match day** and open the 📋 guide with them once
-- [ ] Run every match from that tab — kick off, GOAL/SAVE/CLEARANCE, end the half
+- [ ] Run every match from that tab — kick off, GOAL / SAVE / CLEARANCE / SHOT / CHANCE, end the half
 - [ ] After the 6th group match, check the Final auto-filled with the right two teams
-- [ ] Pick the **Golden Ball** in Settings before the medals are handed out
+- [ ] Before the medals are handed out, open **Settings → Who gets each medal** and either leave all
+      four on *use the match log* or name the winners yourself
 
 ## Troubleshooting
 

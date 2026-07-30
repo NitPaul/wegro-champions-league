@@ -225,12 +225,21 @@
                   questions can always be skipped.
                 </li>
                 <li>
+                  <b>Was the goal critical?</b> On the "where from" screen there is a
+                  <b>☆ Critical goal</b> switch — tap it for the opener, an equaliser, a winner
+                  or anything in the Final. It is worth extra points. You can also switch it on
+                  or off later from the <b>Match log</b>, so never hold up the restart for it.
+                </li>
+                <li>
                   <b>A save is one tap.</b> Press <b>SAVE</b> under the defending team. It goes
                   to that team's goalkeeper, whose name is printed on the button.
                 </li>
                 <li>
-                  <b>A clearance is two taps.</b> Press <b>CLEARANCE</b>, then the player who
-                  cleared it. Defenders are listed first.
+                  <b>The other three are two taps each</b> — press the button, then the player:
+                  <b>CLEARANCE</b> for a ball hacked off the line or out of the box (defenders
+                  listed first), <b>SHOT</b> for a shot on target the keeper kept out or that
+                  hit the frame, and <b>CHANCE</b> for the pass that should have been a goal but
+                  was not converted.
                 </li>
                 <li>
                   <b>Made a mistake?</b> Everything you log appears in the <b>Match log</b> at
@@ -239,9 +248,11 @@
                 </li>
               </ol>
               <p class="faint" style="margin: 12px 0 0">
-                Log <em>every</em> save and clearance you see — they are what decide the
-                <b>Golden Glove</b> and <b>Best Defender</b> medals. If you miss one, it simply
-                is not counted; nothing breaks.
+                Log <em>every</em> save, clearance, shot and chance you see — they are what
+                decide the <b>Golden Ball</b>, <b>Golden Glove</b> and <b>Best Defender</b>
+                medals, and they are the only way a player who never scores can win one. If you
+                miss one, it simply is not counted; nothing breaks. The running totals under
+                each team's buttons show what has been logged so far.
               </p>
               <div class="hr"></div>
               <b>What each action is worth</b>
@@ -338,17 +349,24 @@
               <label class="row" style="gap: 8px; margin-top: 12px">
                 <input type="checkbox" id="setAuctionOpen" /> Auction is open
               </label>
-              <div class="hr"></div>
-              <div class="field">
-                <label for="setGoldenBall">Golden Ball — override the computed winner</label>
-                <select class="input" id="setGoldenBall"></select>
-                <p class="faint" style="margin: 6px 0 0">
-                  Leave on <b>— use the points leader —</b> to let the match log decide.
-                  Pick a player only if you want to overrule it.
-                </p>
-              </div>
               <button class="btn btn--primary" id="saveSettings" type="button" style="margin-top: 14px">
                 Save settings
+              </button>
+            </div>
+
+            <div class="card">
+              <h3 class="card__title">Who gets each medal</h3>
+              <p class="faint" style="margin: 0 0 12px">
+                By default every medal goes to whoever the referee's match log says earned it.
+                Leave a medal on <b>— use the match log —</b> and it updates itself as the
+                evening goes on. Name a player instead and that decision wins: the public page
+                then shows the medal as an <b>organisers' pick</b>, so it never looks like the
+                published points table is contradicting itself. You can change any of these at
+                any time, before or after the presentation.
+              </p>
+              <div class="settings-grid" id="medalGrid"></div>
+              <button class="btn btn--primary" id="saveMedals" type="button" style="margin-top: 14px">
+                Save medal winners
               </button>
             </div>
 

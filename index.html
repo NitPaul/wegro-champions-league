@@ -263,14 +263,15 @@
         </div>
 
         <div class="card">
-          <div class="spread">
-            <h3 class="card__title" style="margin: 0">Player points</h3>
-            <span class="faint" id="pointsKey"></span>
-          </div>
+          <h3 class="card__title">Player points</h3>
           <p class="faint chart-note">
             Every action the referee logs, and what it is worth. The medals above are read
-            straight off this table.
+            straight off this table — so you can find your own row and check the maths.
+            <b>G</b> goals, <b>★</b> critical goals, <b>A</b> assists,
+            <b>CC</b> chances created, <b>SH</b> shots on target, <b>SV</b> saves,
+            <b>CL</b> clearances, <b>CS</b> clean sheets.
           </p>
+          <div class="pt-key" id="pointsKey"></div>
           <div id="pointsTable"></div>
         </div>
 
@@ -298,6 +299,15 @@
             <p class="faint chart-note">The work that wins the Glove and the Shield.</p>
             <div id="chartDefensive"></div>
           </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card__title">Chances created &amp; shots on target</h3>
+          <p class="faint chart-note">
+            The near misses. They never reach a scoreline, but they count towards the
+            Golden Ball.
+          </p>
+          <div id="chartAttacking"></div>
         </div>
 
         <div class="cols-3">

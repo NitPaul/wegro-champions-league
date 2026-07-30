@@ -15,7 +15,10 @@
         squad has exactly one goalkeeper, so a save is ONE tap — the keeper is
         named on the button so it is never a guess.
      3. Everything is undoable, from the log underneath, and removing a goal
-        takes it off the scoreline too.
+        takes it off the scoreline too. The same goes for the critical-goal
+        mark: it can be set during the goal flow or switched on and off from the
+        log afterwards, so "that one mattered" is never a decision that had to be
+        made in the two seconds after the ball crossed the line.
 
    Clock design: the database never stores a ticking number. It stores when the
    clock was last started plus the seconds banked before that, so pressing Start
@@ -222,8 +225,10 @@ function paintConsole() {
 
 /**
  * The logging pad: one column per team, so the referee's thumb never has to
- * decide which side a button belongs to. Goal is the big target; the two
- * point-scoring defensive actions sit under it.
+ * decide which side a button belongs to. Goal is the big target; the four
+ * point-scoring actions sit under it in a 2×2 block — the two defensive ones on
+ * the top row, the two attacking ones beneath, always in the same place, because
+ * muscle memory is the only thing that works at speed.
  */
 function actionGrid(sides) {
   const m = currentMatch();
@@ -234,52 +239,112 @@ function actionGrid(sides) {
 
     const gk = keeperOf(team.id);
     const n = countFor(m, team.id);
+    const sub = (type, text) =>
+      `<button class="act act--${type}" type="button" data-act="${type}" data-team="${e(team.id)}">
+        <span class="act-ico">${D.ACTION_ICON[type]}</span>
+        <span class="act-lbl">${e(SHORT_LABEL[type])}</span>
+        <span class="act-sub">${e(text)}</span>
+      </button>`;
+
     return `<div class="act-team act-team--${which}">
       <div class="act-head">${e(team.name)}</div>
       <button class="act act--goal" type="button" data-act="goal" data-team="${e(team.id)}">
         <span class="act-ico">⚽</span><span class="act-lbl">GOAL</span>
       </button>
       <div class="act-row">
-        <button class="act act--save" type="button" data-act="save" data-team="${e(team.id)}">
-          <span class="act-ico">🧤</span>
-          <span class="act-lbl">SAVE</span>
-          <span class="act-sub">${gk ? e(gk.name) : "pick keeper"}</span>
-        </button>
-        <button class="act act--clear" type="button" data-act="clearance" data-team="${e(team.id)}">
-          <span class="act-ico">🛡</span>
-          <span class="act-lbl">CLEARANCE</span>
-          <span class="act-sub">pick player</span>
-        </button>
+        ${sub("save", gk ? gk.name : "pick keeper")}
+        ${sub("clearance", "pick player")}
+        ${sub("shot", "on target")}
+        ${sub("chance", "key pass")}
       </div>
-      <div class="act-tally faint">
-        ${n.goals} goal${n.goals === 1 ? "" : "s"} · ${n.saves} save${
-      n.saves === 1 ? "" : "s"
-    } · ${n.clearances} clearance${n.clearances === 1 ? "" : "s"}
-      </div>
+      <div class="act-tally faint">${tallyLine(n)}</div>
     </div>`;
   };
 
   return `<div class="card act-card">
     <div class="act-grid">${block(sides.home, "home")}${block(sides.away, "away")}</div>
     <p class="faint console-hint">
-      <b>Goal:</b> tap GOAL → who scored → where from → who assisted. The score saves on
-      the first tap; the rest can be skipped.
-      <b>Save</b> is one tap. Everything can be removed in the log below.
+      <b>Goal:</b> tap GOAL → who scored → mark it critical if it mattered → where from →
+      who assisted. The score saves on the first tap; everything after it can be skipped.
+      <b>Save</b> is one tap. <b>Shot</b> is a shot on target that did not go in;
+      <b>Chance</b> is a pass that should have been a goal. Everything can be removed
+      or changed in the log below.
     </p>
   </div>`;
+}
+
+/** Button captions. Short enough to survive two columns on a phone. */
+const SHORT_LABEL = {
+  save: "SAVE",
+  clearance: "CLEARANCE",
+  shot: "SHOT",
+  chance: "CHANCE",
+};
+
+/**
+ * The running tally under each team's buttons. Five counters would not fit as
+ * sentences on a phone, so each one wears the same icon as the button that
+ * produces it and carries a title for anything that needs spelling out.
+ */
+function tallyLine(n) {
+  return [
+    ["goal", n.goals, "Goals"],
+    ["save", n.saves, "Saves"],
+    ["clearance", n.clearances, "Clearances"],
+    ["shot", n.shots, "Shots on target"],
+    ["chance", n.chances, "Chances created"],
+  ]
+    .map(
+      ([type, v, title]) =>
+        `<span class="act-count${v ? " is-on" : ""}" title="${e(title)}">${
+          D.ACTION_ICON[type]
+        } ${v}</span>`
+    )
+    .join("");
 }
 
 /** What this team has logged in this match — shown live under their buttons. */
 function countFor(m, teamId) {
   const evs = D.matchEvents(m).filter((x) => x.teamId === teamId);
+  const of = (type) => evs.filter((x) => x.type === type).length;
   return {
     goals: evs.filter(D.isGoalEvent).length,
-    saves: evs.filter((x) => x.type === "save").length,
-    clearances: evs.filter((x) => x.type === "clearance").length,
+    saves: of("save"),
+    clearances: of("clearance"),
+    shots: of("shot"),
+    chances: of("chance"),
   };
 }
 
 /* ------------------------------------------------------------- the flow pad */
+
+/**
+ * The critical-goal switch.
+ *
+ * A toggle, not a step: tapping it saves straight away and leaves the referee
+ * exactly where they were, so marking a goal as decisive never costs them the
+ * place they had in the flow. It appears on the "where from" panel — by then the
+ * goal is already on the board, so this can only ever add to a correct score.
+ */
+function criticalToggle(evId) {
+  const m = currentMatch();
+  const ev = D.matchEvents(m).find((x) => x.id === evId);
+  if (!ev || ev.ownGoal) return "";
+  const on = Boolean(ev.critical);
+  const bonus = D.getPoints(data).criticalGoal;
+
+  return `<button class="crit-toggle${on ? " is-on" : ""}" type="button"
+      data-crit="${e(evId)}" aria-pressed="${on}">
+    <span class="crit-star">${on ? "⭐" : "☆"}</span>
+    <span class="grow">
+      <b>${on ? "Critical goal" : "Was it a critical goal?"}</b>
+      <span class="crit-why">Opener, equaliser, winner or a Final goal — worth ${
+        bonus >= 0 ? "+" : ""
+      }${bonus} extra</span>
+    </span>
+    <span class="crit-state">${on ? "ON" : "OFF"}</span>
+  </button>`;
+}
 
 /** One tappable player button. */
 function playerBtn(p, extra = "") {
@@ -298,6 +363,26 @@ function panel(title, sub, inner) {
   </div>`;
 }
 
+/**
+ * Per-action wording for the "who did it?" step, and which positions to float to
+ * the front of the grid. Sorting the likely candidates first is not cosmetic:
+ * it is what keeps a two-tap action at two taps instead of a scan.
+ */
+const WHO = {
+  save: { title: (t) => `Who made the save for ${t}?`, first: ["GK"] },
+  clearance: { title: (t) => `Who cleared it for ${t}?`, first: ["DEF"] },
+  shot: {
+    title: (t) => `Who had the shot for ${t}?`,
+    sub: "On target but kept out — not a goal.",
+    first: ["FWD", "MID"],
+  },
+  chance: {
+    title: (t) => `Who created the chance for ${t}?`,
+    sub: "The pass that should have been a goal.",
+    first: ["MID", "FWD"],
+  },
+};
+
 function flowPanel(sides) {
   const team = D.teamById(data, flow.teamId);
   if (!team) return "";
@@ -306,31 +391,26 @@ function flowPanel(sides) {
   /* ---- who did it? --------------------------------------------------- */
   if (flow.step === "who") {
     const isGoal = flow.kind === "goal" || flow.kind === "fixscorer";
-    // For a clearance, defenders come first — that is who usually clears.
-    const order =
-      flow.kind === "clearance"
-        ? [...squad].sort(
-            (a, b) => (a.pos === "DEF" ? 0 : 1) - (b.pos === "DEF" ? 0 : 1)
-          )
-        : squad;
+    const cfg = WHO[flow.kind];
+    const rank = (p) => {
+      const i = cfg ? cfg.first.indexOf(p.pos) : -1;
+      return i < 0 ? cfg?.first.length ?? 0 : i;
+    };
+    const order = cfg ? [...squad].sort((a, b) => rank(a) - rank(b)) : squad;
 
     const title = isGoal
       ? `Who scored for ${e(team.name)}?`
-      : flow.kind === "save"
-      ? `Who made the save for ${e(team.name)}?`
-      : `Who cleared it for ${e(team.name)}?`;
+      : e(cfg.title(team.name));
 
     return panel(
       title,
-      isGoal ? "The goal is saved as soon as you tap." : "",
+      isGoal ? "The goal is saved as soon as you tap." : e(cfg.sub || ""),
       `<div class="picker-grid">
         <button class="picker-btn is-cap" type="button" data-pick="__captain">
           ${e(team.captainName)}<span>captain</span>
         </button>
         ${order
-          .map((p) =>
-            playerBtn(p, flow.kind === "clearance" && p.pos === "DEF" ? "is-hint" : "")
-          )
+          .map((p) => playerBtn(p, cfg && rank(p) === 0 ? "is-hint" : ""))
           .join("")}
         ${
           isGoal
@@ -346,14 +426,15 @@ function flowPanel(sides) {
     );
   }
 
-  /* ---- where from? --------------------------------------------------- */
+  /* ---- where from, and did it matter? -------------------------------- */
   if (flow.step === "zone") {
     const cell = (k) =>
       `<button class="zone-cell" type="button" data-zone="${k}">${e(D.ZONE_LABEL[k])}</button>`;
     return panel(
       "Where was it scored from?",
       "Tap the pitch. Skip if you did not see it.",
-      `<div class="zone-pick">
+      `${criticalToggle(flow.evId)}
+      <div class="zone-pick">
         <div class="zone-goal">▲ GOAL</div>
         <div class="zone-grid">
           ${cell("lb")}${cell("ib")}${cell("rb")}
@@ -405,9 +486,10 @@ function paintEvents() {
   const events = D.matchEvents(m);
   const tally = m ? D.eventTally(data, m) : null;
 
-  const goals = events.filter(D.isGoalEvent).length;
-  const saves = events.filter((x) => x.type === "save").length;
-  const clears = events.filter((x) => x.type === "clearance").length;
+  const count = (type) => events.filter((x) => x.type === type).length;
+  // The plural is spelled out rather than derived: two of these are phrases, and
+  // adding an "s" to the end of one gives "0 shot on targets".
+  const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
   $("#liveTally").innerHTML = `${
     tally
@@ -415,8 +497,14 @@ function paintEvents() {
           tally.home
         }–${tally.away} · Score ${tally.homeScore}–${tally.awayScore}</span>`
       : `<span class="pill">Not started</span>`
-  } <span class="pill">${saves} save${saves === 1 ? "" : "s"}</span>
-    <span class="pill">${clears} clearance${clears === 1 ? "" : "s"}</span>`;
+  } ${[
+    plural(count("save"), "save", "saves"),
+    plural(count("clearance"), "clearance", "clearances"),
+    plural(count("shot"), "shot on target", "shots on target"),
+    plural(count("chance"), "chance created", "chances created"),
+  ]
+    .map((t) => `<span class="pill">${e(t)}</span>`)
+    .join("")}`;
 
   setHTML(
     $("#liveEvents"),
@@ -436,6 +524,11 @@ function paintEvents() {
                 : actor?.name || ev.scorerName || ev.playerName || "Player not recorded";
 
             const detail = [
+              // Saves, shots and chances all name a player, so the log has to say
+              // which of them this row actually is.
+              ev.type === "goal" || ev.type === "penalty_goal"
+                ? null
+                : D.ACTION_LABEL[ev.type] || null,
               team?.name,
               ev.type === "goal" && ev.zone ? D.ZONE_LABEL[ev.zone] : null,
               assist ? `assist ${assist.name}` : ev.assistName ? `assist ${ev.assistName}` : null,
@@ -444,10 +537,21 @@ function paintEvents() {
               .filter(Boolean)
               .join(" · ");
 
-            return `<div class="ev-row ev-row--${e(ev.type)}">
+            return `<div class="ev-row ev-row--${e(ev.type)}${ev.critical ? " is-critical" : ""}">
               <span class="ev-ico">${D.ACTION_ICON[ev.type] || "•"}</span>
-              <span class="grow"><b>${e(name)}</b>
+              <span class="grow"><b>${e(name)}</b>${
+              ev.critical ? ` <span class="flag-crit">⭐ critical</span>` : ""
+            }
                 <div class="faint">${e(detail)}</div></span>
+              ${
+                ev.type === "goal" && !ev.ownGoal
+                  ? `<button class="btn btn--sm btn--crit${ev.critical ? " is-on" : ""}" type="button"
+                       data-crit="${e(ev.id)}" aria-pressed="${Boolean(ev.critical)}"
+                       title="Mark this goal as a critical goal">${
+                         ev.critical ? "⭐ Critical" : "☆ Critical"
+                       }</button>`
+                  : ""
+              }
               ${
                 ev.type === "goal" && !ev.ownGoal && !actor && !ev.scorerName
                   ? `<button class="btn btn--sm" type="button" data-fixev="${e(
@@ -461,7 +565,9 @@ function paintEvents() {
             </div>`;
           })
           .join("")
-      : `<div class="empty">Nothing logged yet. Goals, saves and clearances appear here as you tap them.</div>`
+      : `<div class="empty">Nothing logged yet. Goals, saves, clearances, shots on target and
+           chances created all appear here as you tap them — and can be changed or removed
+           from here afterwards.</div>`
   );
 }
 
@@ -550,6 +656,29 @@ async function nameScorer(teamId, pick) {
   try {
     await writeMany(patch);
     toast("Scorer added.");
+  } catch (ex) {
+    toast(`Could not save: ${ex.message}`, "err");
+  }
+}
+
+/**
+ * Flip the critical mark on a goal that is already saved.
+ *
+ * Works from the goal flow and from the log, and never touches the flow or the
+ * scoreline — so it can be corrected at half-time, or by the organisers a week
+ * later, with no risk to the result.
+ */
+async function toggleCritical(evId) {
+  const m = currentMatch();
+  const ev = D.matchEvents(m).find((x) => x.id === evId);
+  if (!ev) return;
+  const on = !ev.critical;
+  try {
+    // Stored as `null` when switched off, so the flag disappears from the record
+    // rather than lingering as an explicit false.
+    await writeMany({ [`matches/${m.id}/events/${evId}/critical`]: on || null });
+    toast(on ? "⭐ Marked as a critical goal." : "Critical mark removed.");
+    paintConsole();
   } catch (ex) {
     toast(`Could not save: ${ex.message}`, "err");
   }
@@ -712,6 +841,10 @@ function wire() {
     if (clk) return void clockAction(clk.dataset.clk);
     if (!flow) return;
 
+    // A toggle, not a step — it deliberately leaves `flow` alone.
+    const crit = ev.target.closest("[data-crit]");
+    if (crit) return void toggleCritical(crit.dataset.crit);
+
     const zone = ev.target.closest("[data-zone]");
     if (zone) return void setZone(zone.dataset.zone);
 
@@ -729,6 +862,9 @@ function wire() {
   });
 
   $("#liveEvents").addEventListener("click", async (ev) => {
+    const crit = ev.target.closest("[data-crit]");
+    if (crit) return void toggleCritical(crit.dataset.crit);
+
     const del = ev.target.closest("[data-delev]");
     if (del) {
       const m = currentMatch();

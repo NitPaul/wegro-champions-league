@@ -15,9 +15,11 @@
        is the classic colour-blind trap and is avoided on purpose.
      - Goals by pitch zone is magnitude over a map, so it is sequential: ONE hue
        (mint) stepped light to dark, never a rainbow.
-     - Saves vs clearances is the only two-series chart here, so it is the only
-       one with a legend — and each segment is labelled as well, so identity is
-       never carried by colour alone.
+     - The two stacked charts (saves vs clearances, chances vs shots) are the
+       only two-series ones here, so they are the only ones with a legend — and
+       each segment is labelled as well, so identity is never carried by colour
+       alone. They share one blue/gold pair rather than spending four hues on
+       four series: each chart is read on its own, against its own legend.
 
    On the palette: these steps sit above the generic dark-mode lightness band,
    deliberately. The card surface (#0B3B36) is far darker than a typical dark
@@ -235,17 +237,24 @@ function zoneChart({ counts, total, unknown }) {
 }
 
 /**
- * Two series stacked into one bar: the parts of a player's defensive workload.
+ * Two series stacked into one bar — a player's workload split into its parts.
  * A legend is mandatory at two series, and each segment is labelled too. The 2px
  * gap between segments is a surface-coloured spacer, not a border, so the split
  * reads even where the two hues meet.
+ *
+ * `a` and `b` name the series: `{ label, one, many }`. Both stacked charts on the
+ * page reuse the same validated blue/gold pair rather than inventing a third and
+ * fourth hue — each carries its own legend and its own labelled segments, and the
+ * chart titles say which pair of things is being split, so nothing is riding on
+ * colour memory across two charts.
  */
-function stackChart({ rows }) {
+function stackChart({ rows, a, b }) {
   const top = Math.max(1, ...rows.map((r) => r.a + r.b));
+  const count = (v, s) => `${v} ${v === 1 ? s.one : s.many}`;
   return `<div class="stack">
     <div class="chart-legend">
-      <span><i class="key key--saves"></i> Saves</span>
-      <span><i class="key key--clears"></i> Clearances</span>
+      <span><i class="key key--saves"></i> ${e(a.label)}</span>
+      <span><i class="key key--clears"></i> ${e(b.label)}</span>
     </div>
     ${rows
       .map((r) => {
@@ -256,9 +265,7 @@ function stackChart({ rows }) {
               }</span>`
             : "";
         return `<div class="bar-row" tabindex="0" data-tip="${e(
-          `${r.label} — ${r.a} save${r.a === 1 ? "" : "s"}, ${r.b} clearance${
-            r.b === 1 ? "" : "s"
-          }`
+          `${r.label} — ${count(r.a, a)}, ${count(r.b, b)}`
         )}">
         <span class="bar-label">${e(r.label)}<span class="bar-sub">${e(r.sub)}</span></span>
         <span class="bar-track stack-track">${seg(r.a, "is-a")}${seg(r.b, "is-b")}</span>
@@ -374,8 +381,9 @@ export function renderCharts(data) {
       : empty("The referee records where every goal was struck from.")
   );
 
-  /* 6 — Defensive workload. The one two-series chart, so the one with a legend. */
-  const def = D.playerStats(data)
+  /* 6 — Defensive workload. Two series, so a legend and labelled segments. */
+  const stats = D.playerStats(data);
+  const def = stats
     .filter((r) => r.saves || r.clearances)
     .sort((a, b) => b.saves + b.clearances - (a.saves + a.clearances))
     .slice(0, 8);
@@ -383,6 +391,8 @@ export function renderCharts(data) {
     "chartDefensive",
     def.length
       ? stackChart({
+          a: { label: "Saves", one: "save", many: "saves" },
+          b: { label: "Clearances", one: "clearance", many: "clearances" },
           // The segments and the legend already carry the split, so the sub-line
           // stays short — a long one just gets clipped by the label column.
           rows: def.map((r) => ({
@@ -395,7 +405,29 @@ export function renderCharts(data) {
       : empty("Saves and clearances appear here once the matches begin.")
   );
 
-  /* 7 — Auction spend. A ratio against a fixed limit per team. */
+  /* 7 — The near misses. The work that shows up in a Golden Ball total without
+     ever showing up on a scoreline, which is exactly why it is worth a chart. */
+  const att = stats
+    .filter((r) => r.chances || r.shots)
+    .sort((a, b) => b.chances + b.shots - (a.chances + a.shots))
+    .slice(0, 8);
+  setChart(
+    "chartAttacking",
+    att.length
+      ? stackChart({
+          a: { label: "Chances created", one: "chance created", many: "chances created" },
+          b: { label: "Shots on target", one: "shot on target", many: "shots on target" },
+          rows: att.map((r) => ({
+            label: r.player.name,
+            sub: r.team?.name || "",
+            a: r.chances,
+            b: r.shots,
+          })),
+        })
+      : empty("Shots on target and chances created appear here once the matches begin.")
+  );
+
+  /* 8 — Auction spend. A ratio against a fixed limit per team. */
   const s = D.getSettings(data);
   const st = D.auctionState(data);
   setChart(

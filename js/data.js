@@ -45,10 +45,25 @@ export const ACTION_LABEL = {
   penalty_goal: "Punctuality penalty",
   save: "Save",
   clearance: "Clearance",
+  shot: "Shot on target",
+  chance: "Chance created",
 };
-export const ACTION_ICON = { goal: "⚽", penalty_goal: "⏱", save: "🧤", clearance: "🛡" };
+export const ACTION_ICON = {
+  goal: "⚽",
+  penalty_goal: "⏱",
+  save: "🧤",
+  clearance: "🛡",
+  shot: "🎯",
+  chance: "🔑",
+};
 
-/** Does this event change the score? Saves and clearances must never count. */
+/**
+ * Does this event change the score?
+ *
+ * Only the two goal types. Everything else — saves, clearances, shots on target,
+ * chances created — is a credit to a player and must leave the scoreline alone,
+ * or the tally warning in the admin console would fire on every match.
+ */
 export const isGoalEvent = (ev) => ev?.type === "goal" || ev?.type === "penalty_goal";
 
 /* ----------------------------------------------------------- award scoring */
@@ -62,12 +77,25 @@ export const isGoalEvent = (ev) => ev?.type === "goal" || ev?.type === "penalty_
  * three, which is the point: Golden Ball has to be winnable from any position,
  * or it is just the Golden Boot with a longer name.
  *
+ * The near-misses are paid too, one step below the thing they nearly were: a
+ * chance created is an assist the striker wasted (2 against 3), a shot on target
+ * is a goal the keeper stopped (1). Both are cheap on purpose — they happen far
+ * more often than goals, so a big number here would drown everything else out.
+ *
+ * `criticalGoal` is a BONUS added on top of `goal`, not a replacement for it, so
+ * a decider is worth 5 + 3 = 8. That makes the goal that settles a match matter
+ * more than a fourth in a rout, without letting one moment outweigh a keeper's
+ * entire evening.
+ *
  * Every value is editable in admin Settings, so nothing here is a decision the
  * organisers are stuck with.
  */
 export const DEFAULT_POINTS = {
   goal: 5,
+  criticalGoal: 3,
   assist: 3,
+  chance: 2,
+  shot: 1,
   save: 2,
   clearance: 1,
   cleanSheetGK: 5,
@@ -79,7 +107,10 @@ export const DEFAULT_POINTS = {
 /** Order and labels for the points table wherever it is shown or edited. */
 export const POINT_FIELDS = [
   ["goal", "Goal"],
+  ["criticalGoal", "Critical goal — bonus on top"],
   ["assist", "Assist"],
+  ["chance", "Chance created"],
+  ["shot", "Shot on target"],
   ["save", "Save"],
   ["clearance", "Clearance"],
   ["cleanSheetGK", "Clean sheet — goalkeeper"],
@@ -89,6 +120,26 @@ export const POINT_FIELDS = [
 ];
 
 export const getPoints = (data) => ({ ...DEFAULT_POINTS, ...(data?.settings?.points || {}) });
+
+/**
+ * The four medals, in the order they are presented.
+ *
+ * `[key, label, medal, overrideSetting, basis]`. Every medal computes a winner
+ * from the points table AND can be overruled by name from Settings: the referee's
+ * log is the default, not the verdict. Management may hand any of these to
+ * someone else — a player who was decisive in a way no tally captures, or one who
+ * is simply the right recipient — and the public card then says so rather than
+ * quietly contradicting the numbers printed underneath it.
+ *
+ * Driving admin, the public cards and the awards themselves off this one list is
+ * what keeps those three from disagreeing after an override.
+ */
+export const MEDALS = [
+  ["goldenBall", "Golden Ball", "🏅", "goldenBallPlayerId", "highest points total of anyone"],
+  ["goldenBoot", "Golden Boot", "👟", "goldenBootPlayerId", "most goals scored"],
+  ["goldenGlove", "Golden Glove", "🧤", "goldenGlovePlayerId", "highest points total among goalkeepers"],
+  ["bestDefender", "Best Defender", "🛡", "bestDefenderPlayerId", "highest points total among defenders"],
+];
 
 /* ------------------------------------------------------------- match clock */
 
@@ -314,7 +365,11 @@ export function seed() {
       maxPerCategory: 2,
       maxGK: 1,
       auctionOpen: true,
+      // One override per medal — null means "let the points table decide".
       goldenBallPlayerId: null,
+      goldenBootPlayerId: null,
+      goldenGlovePlayerId: null,
+      bestDefenderPlayerId: null,
       // Match clock, in seconds — deck Rule 1: two 8-minute halves, 2-minute break.
       halfSeconds: 480,
       breakSeconds: 120,
@@ -670,7 +725,10 @@ export function playerStats(data) {
       player: p,
       team: teamById(data, p.teamId),
       goals: 0,
+      criticalGoals: 0,
       assists: 0,
+      chances: 0,
+      shots: 0,
       saves: 0,
       clearances: 0,
       ownGoals: 0,
@@ -691,7 +749,12 @@ export function playerStats(data) {
         if (r) r.ownGoals++;
       } else {
         const r = at(ev.scorerId);
-        if (r) r.goals++;
+        if (r) {
+          r.goals++;
+          // Tracked separately from `goals` so the bonus is visible in the
+          // ledger rather than hidden inside a total nobody can reproduce.
+          if (ev.critical) r.criticalGoals++;
+        }
       }
       const a = at(ev.assistId);
       if (a) a.assists++;
@@ -701,6 +764,12 @@ export function playerStats(data) {
     } else if (ev.type === "clearance") {
       const r = at(ev.playerId);
       if (r) r.clearances++;
+    } else if (ev.type === "shot") {
+      const r = at(ev.playerId);
+      if (r) r.shots++;
+    } else if (ev.type === "chance") {
+      const r = at(ev.playerId);
+      if (r) r.chances++;
     }
   }
 
@@ -720,7 +789,10 @@ export function playerStats(data) {
   for (const r of rows.values()) {
     r.points =
       r.goals * w.goal +
+      r.criticalGoals * w.criticalGoal +
       r.assists * w.assist +
+      r.chances * w.chance +
+      r.shots * w.shot +
       r.saves * w.save +
       r.clearances * w.clearance +
       r.ownGoals * w.ownGoal +
@@ -740,9 +812,21 @@ export function playerStats(data) {
   );
 }
 
+/** Did this player do anything worth a row in the ledger? */
+export const hasRecord = (r) =>
+  Boolean(
+    r.points !== 0 ||
+      r.goals ||
+      r.assists ||
+      r.chances ||
+      r.shots ||
+      r.saves ||
+      r.clearances ||
+      r.ownGoals
+  );
+
 /** Has anyone done anything yet? Used to keep empty tables off the page. */
-export const hasMatchData = (data) =>
-  playerStats(data).some((r) => r.points !== 0 || r.goals || r.saves || r.clearances);
+export const hasMatchData = (data) => playerStats(data).some(hasRecord);
 
 /** Top of a leaderboard, plus whether it is currently a tie. */
 function leader(rows, key = "points") {
@@ -781,31 +865,44 @@ export function goalsByPosition(data) {
  * what they are ranked on. Golden Boot stays a pure goal count — it is the one
  * award where the name promises exactly one thing.
  *
- * Golden Ball keeps its manual override: `goldenBallPlayerId` in Settings wins
- * over the computed leader, because a referee watching the match may see
- * something the tally cannot. The returned row says which it was.
+ * Every medal accepts a manual override from Settings (see MEDALS), and an
+ * override wins over the computed leader — a referee, or management afterwards,
+ * may see something the tally cannot. Overridden rows come back with
+ * `picked: true` so the public card can say the award was assigned rather than
+ * let it look like the arithmetic disagrees with itself.
  */
 export function awards(data) {
   const all = playerStats(data);
-  const gbId = getSettings(data).goldenBallPlayerId;
-  const picked = gbId ? all.find((r) => r.playerId === gbId) : null;
+  const s = getSettings(data);
+
+  /** The overridden row for a medal, or null to fall back to the computation. */
+  const override = (key) => {
+    const id = s[key];
+    const row = id ? all.find((r) => r.playerId === id) : null;
+    return row ? { ...row, picked: true, tied: false } : null;
+  };
+  const computed = (row) => (row ? { ...row, picked: false } : null);
 
   const byGoals = all
     .filter((r) => r.goals > 0)
     .sort((a, b) => b.goals - a.goals || b.assists - a.assists || a.player.name.localeCompare(b.player.name));
   const topGoals = byGoals[0]?.goals || 0;
+  const bootPick = override("goldenBootPlayerId");
 
   return {
     all,
-    goldenBall: picked
-      ? { ...picked, picked: true, tied: false }
-      : (() => {
-          const l = leader(all);
-          return l ? { ...l, picked: false } : null;
-        })(),
-    goldenBoot: byGoals.filter((r) => r.goals === topGoals),
-    goldenGlove: leader(all.filter((r) => r.player.pos === "GK" && !isSpecial(r.player))),
-    bestDefender: leader(all.filter((r) => r.player.pos === "DEF" && !isSpecial(r.player))),
+    goldenBall: override("goldenBallPlayerId") || computed(leader(all)),
+    // An array, because the Boot really can be shared. An override names one
+    // player, so it collapses the tie by decree.
+    goldenBoot: bootPick
+      ? [bootPick]
+      : byGoals.filter((r) => r.goals === topGoals).map((r) => ({ ...r, picked: false })),
+    goldenGlove:
+      override("goldenGlovePlayerId") ||
+      computed(leader(all.filter((r) => r.player.pos === "GK" && !isSpecial(r.player)))),
+    bestDefender:
+      override("bestDefenderPlayerId") ||
+      computed(leader(all.filter((r) => r.player.pos === "DEF" && !isSpecial(r.player)))),
   };
 }
 

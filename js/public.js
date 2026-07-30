@@ -417,19 +417,36 @@ function fixtureCard(data, m, { plain = false } = {}) {
       ? ` type="button" data-fx="${e(m.id)}" aria-expanded="false" aria-controls="ev-${e(m.id)}"`
       : "";
 
+  // The full match log, not just the goals: saves, clearances, shots and chances
+  // are all in here too, so each row carries its own icon and — for anything that
+  // is not a goal — says which action it was. Reading a save as an unnamed goal is
+  // exactly what happens if this list assumes every event is a scorer.
   const evHtml = events.length
     ? `<div class="fx__events" id="ev-${e(m.id)}" hidden>${events
         .map((ev) => {
           const away = ev.teamId === s.away?.id;
-          const scorer = D.playerById(data, ev.scorerId);
+          const actor = D.playerById(data, ev.scorerId || ev.playerId);
           const assist = D.playerById(data, ev.assistId);
-          const who =
-            ev.type === "penalty_goal"
-              ? `<b>Punctuality penalty</b> <span class="faint">(Rule 4)</span>`
-              : `<b>${e(scorer?.name || "Unknown")}</b>${ev.penalty ? ' <span class="faint">(pen)</span>' : ""}${
-                  assist ? ` <span class="faint">assist ${e(assist.name)}</span>` : ""
-                }`;
-          return `<div class="fx__ev${away ? " away" : ""}">⚽ ${who}</div>`;
+          const name = actor?.name || ev.scorerName || ev.playerName || "";
+          const icon = D.ACTION_ICON[ev.type] || "•";
+
+          if (ev.type === "penalty_goal")
+            return `<div class="fx__ev${away ? " away" : ""}">${icon}
+              <b>Punctuality penalty</b> <span class="faint">(Rule 4)</span></div>`;
+
+          if (ev.ownGoal)
+            return `<div class="fx__ev${away ? " away" : ""}">${icon}
+              <b>Own goal</b>${name ? ` <span class="faint">${e(name)}</span>` : ""}</div>`;
+
+          const tail =
+            ev.type === "goal"
+              ? `${ev.critical ? ' <span class="fx__crit">⭐</span>' : ""}${
+                  ev.penalty ? ' <span class="faint">(pen)</span>' : ""
+                }${assist ? ` <span class="faint">assist ${e(assist.name)}</span>` : ""}`
+              : ` <span class="faint">${e(D.ACTION_LABEL[ev.type] || "")}</span>`;
+
+          return `<div class="fx__ev${away ? " away" : ""}">${icon}
+            <b>${e(name || "Not recorded")}</b>${tail}</div>`;
         })
         .join("")}</div>`
     : "";
@@ -646,19 +663,33 @@ function paintStats(data) {
 
 /** A one-line summary of how a player earned their total. */
 function breakdown(r) {
+  const n = (v, one, many = `${one}s`) => (v ? `${v} ${v === 1 ? one : many}` : "");
   return [
-    r.goals ? `${r.goals} goal${r.goals === 1 ? "" : "s"}` : "",
-    r.assists ? `${r.assists} assist${r.assists === 1 ? "" : "s"}` : "",
-    r.saves ? `${r.saves} save${r.saves === 1 ? "" : "s"}` : "",
-    r.clearances ? `${r.clearances} clearance${r.clearances === 1 ? "" : "s"}` : "",
-    r.cleanSheets ? `${r.cleanSheets} clean sheet${r.cleanSheets === 1 ? "" : "s"}` : "",
+    n(r.goals, "goal"),
+    n(r.criticalGoals, "critical"),
+    n(r.assists, "assist"),
+    n(r.chances, "chance created", "chances created"),
+    n(r.shots, "shot on target", "shots on target"),
+    n(r.saves, "save"),
+    n(r.clearances, "clearance"),
+    n(r.cleanSheets, "clean sheet"),
   ]
     .filter(Boolean)
     .join(" · ");
 }
 
+/**
+ * The medal cards, driven off D.MEDALS so admin, the awards themselves and this
+ * page can never fall out of step.
+ *
+ * Every card says where its answer came from. A computed winner shows what they
+ * did to earn it; an assigned one says "organisers' pick", because a page that
+ * publishes the full points table underneath cannot also show a winner who is not
+ * top of it without explaining itself.
+ */
 function paintAwards(data) {
   const aw = D.awards(data);
+  const boot = aw.goldenBoot;
 
   const card = (medal, label, winner, sub, note) =>
     `<div class="award${winner ? "" : " tbd"}">
@@ -669,41 +700,31 @@ function paintAwards(data) {
       ${winner && note ? `<div class="award-note">${e(note)}</div>` : ""}
     </div>`;
 
-  // A tie is stated rather than silently broken — the alphabetical order that
-  // settles it is a rendering detail, not a result.
-  const tie = (r) => (r?.tied ? "tied on points" : "");
-  const boot = aw.goldenBoot;
+  const pts = (r) => `${r.points} pts · ${r.team?.name || "unsold"}`;
 
   setHTML(
     $("#awards"),
-    card(
-      "🏅",
-      "Golden Ball",
-      aw.goldenBall?.player?.name || null,
-      aw.goldenBall ? `${aw.goldenBall.points} pts · ${aw.goldenBall.team?.name || ""}` : "",
-      aw.goldenBall?.picked ? "organisers' pick" : tie(aw.goldenBall)
-    ) +
-      card(
-        "👟",
-        "Golden Boot",
-        boot.length ? boot.map((x) => x.player.name).join(" & ") : null,
-        boot.length ? `${boot[0].goals} goal${boot[0].goals === 1 ? "" : "s"}` : "",
-        boot.length > 1 ? "shared" : ""
-      ) +
-      card(
-        "🧤",
-        "Golden Glove",
-        aw.goldenGlove?.player?.name || null,
-        aw.goldenGlove ? `${aw.goldenGlove.points} pts · ${aw.goldenGlove.team?.name || ""}` : "",
-        aw.goldenGlove ? breakdown(aw.goldenGlove) : ""
-      ) +
-      card(
-        "🛡",
-        "Best Defender",
-        aw.bestDefender?.player?.name || null,
-        aw.bestDefender ? `${aw.bestDefender.points} pts · ${aw.bestDefender.team?.name || ""}` : "",
-        aw.bestDefender ? breakdown(aw.bestDefender) : ""
-      )
+    D.MEDALS.map(([key, label, medal]) => {
+      if (key === "goldenBoot") {
+        return card(
+          medal,
+          label,
+          boot.length ? boot.map((x) => x.player.name).join(" & ") : null,
+          boot.length ? `${boot[0].goals} goal${boot[0].goals === 1 ? "" : "s"}` : "",
+          boot[0]?.picked ? "organisers' pick" : boot.length > 1 ? "shared" : ""
+        );
+      }
+      const r = aw[key];
+      return card(
+        medal,
+        label,
+        r?.player?.name || null,
+        r ? pts(r) : "",
+        // A tie is stated rather than silently broken — the alphabetical order
+        // that settles it is a rendering detail, not a result.
+        r?.picked ? "organisers' pick" : r?.tied ? "tied on points" : r ? breakdown(r) : ""
+      );
+    }).join("")
   );
 }
 
@@ -714,32 +735,47 @@ function paintAwards(data) {
  */
 function paintPointsTable(data) {
   const w = D.getPoints(data);
-  $("#pointsKey").textContent = D.POINT_FIELDS.map(
-    ([k, label]) => `${label} ${w[k] > 0 ? "+" : ""}${w[k]}`
-  ).join(" · ");
-
-  const rows = D.playerStats(data).filter(
-    (r) => r.points !== 0 || r.goals || r.saves || r.clearances || r.assists
+  // Eleven weights, so a chip each rather than one long sentence — and the
+  // negatives are tinted, because "-3" scanned quickly reads as "3".
+  setHTML(
+    $("#pointsKey"),
+    D.POINT_FIELDS.map(
+      ([k, label]) => `<span class="pt-chip${w[k] < 0 ? " is-neg" : ""}">${e(label)}
+        <b>${w[k] > 0 ? "+" : ""}${w[k]}</b></span>`
+    ).join("")
   );
+
+  const rows = D.playerStats(data).filter(D.hasRecord);
 
   if (!rows.length) {
     setHTML(
       $("#pointsTable"),
-      `<div class="empty">Points appear here as the referee logs goals, saves and clearances.</div>`
+      `<div class="empty">Points appear here as the referee logs goals, saves, clearances,
+         shots on target and chances created.</div>`
     );
     return;
   }
+
+  // Every counted action gets its own column. Nine of them is a lot for a phone,
+  // which is why the table scrolls inside its own box — dropping a column would
+  // break the one promise this table makes, that you can add up your own row.
+  const cols = [
+    ["G", "Goals", (r) => r.goals],
+    ["★", "Critical goals", (r) => r.criticalGoals],
+    ["A", "Assists", (r) => r.assists],
+    ["CC", "Chances created", (r) => r.chances],
+    ["SH", "Shots on target", (r) => r.shots],
+    ["SV", "Saves", (r) => r.saves],
+    ["CL", "Clearances", (r) => r.clearances],
+    ["CS", "Clean sheets", (r) => r.cleanSheets],
+  ];
 
   setHTML(
     $("#pointsTable"),
     `<div class="tbl-scroll"><table class="tbl tbl--points">
       <thead><tr>
         <th>#</th><th>Player</th><th>Team</th>
-        <th><abbr title="Goals">G</abbr></th>
-        <th><abbr title="Assists">A</abbr></th>
-        <th><abbr title="Saves">SV</abbr></th>
-        <th><abbr title="Clearances">CL</abbr></th>
-        <th><abbr title="Clean sheets">CS</abbr></th>
+        ${cols.map(([h, title]) => `<th><abbr title="${e(title)}">${e(h)}</abbr></th>`).join("")}
         <th>Pts</th>
       </tr></thead>
       <tbody>${rows
@@ -748,11 +784,7 @@ function paintPointsTable(data) {
           <td><span class="pos">${i + 1}</span></td>
           <td><b>${e(r.player.name)}</b> <span class="faint">${e(r.player.pos)}</span></td>
           <td class="faint">${e(r.team?.name || "—")}</td>
-          <td class="num">${r.goals || ""}</td>
-          <td class="num">${r.assists || ""}</td>
-          <td class="num">${r.saves || ""}</td>
-          <td class="num">${r.clearances || ""}</td>
-          <td class="num">${r.cleanSheets || ""}</td>
+          ${cols.map(([, , get]) => `<td class="num">${get(r) || ""}</td>`).join("")}
           <td class="num"><b>${r.points}</b></td>
         </tr>`
         )
