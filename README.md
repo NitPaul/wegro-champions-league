@@ -211,9 +211,25 @@ permanent 7/6, with a red **+1 extra** badge so the difference stays visible.
 ### Special players
 
 Some people are not part of the auction at all — the chairman, for instance, who may or may not
-turn up on the day. They live in **Auction → Special players**: set the name and position, pick a
-team from the dropdown (or *— not playing —*), press **Save**. That is the whole flow, and it works
-at any point, including during a match.
+turn up on the day, or a guest who walks in ten minutes before kick-off. They live in
+**Auction → Special players**: set the name and position, pick a team from the dropdown (or
+*— not playing —*), press **Save**. That is the whole flow, and it works at any point, including
+during a match.
+
+**A guest arrived?** Type their name in *A guest turned up?* at the top of that card, choose a
+position and a team, and press **Add player** (or just hit Enter). They are on the pitch
+immediately: the referee console lists them alongside the squad on the very next repaint, and the
+public Squads tab shows them within about a second. You can add as many as you need.
+
+Two small guards, both there for the referee's sake:
+
+- **No two players may share a name.** The referee picks a scorer from a list of names, so a second
+  "Rahim" means goals landing on whichever one happens to be first. Add a surname or an initial.
+- **Remove only works while they have no history.** Once a guest appears anywhere in the match log
+  — a goal, an assist, a save, anything — the **Remove** button disappears, because deleting them
+  would leave those events pointing at nobody and a goal would sit on the scoreboard with no
+  scorer. Set them to *— not playing —* instead; that takes them off the team and keeps the record
+  intact.
 
 A special player is deliberately outside every rule:
 

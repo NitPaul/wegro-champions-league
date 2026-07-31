@@ -229,19 +229,22 @@ let specialSig = "";
 function paintSpecials() {
   const rows = D.specialPlayers(data);
   const teams = D.teamsList(data);
-  show($("#specialCard"), rows.length > 0);
-  if (!rows.length) return;
 
   const sig = JSON.stringify([
-    rows.map((p) => [p.id, p.name, p.pos, p.teamId]),
+    rows.map((p) => [p.id, p.name, p.pos, p.teamId, D.playerEventCount(data, p.id) > 0]),
     teams.map((t) => [t.id, t.name]),
   ]);
   if (sig === specialSig) return;
   specialSig = sig;
 
+  paintNewSpecial(teams);
+
   setHTML(
     $("#specialList"),
-    rows
+    !rows.length
+      ? `<p class="faint" style="margin: 0">No guests yet. Anyone added above shows up here,
+         and on the public Squads tab, the moment you save them.</p>`
+      : rows
       .map((p) => {
         const team = D.teamById(data, p.teamId);
         return `<div class="special-row">
@@ -266,6 +269,14 @@ function paintSpecials() {
             .join("")}
         </select>
         <button class="btn btn--sm btn--primary" data-ssave="${e(p.id)}" type="button">Save</button>
+        ${
+          // Only offered while the player has no history — once they are in the
+          // match log the only safe move is to take them off the team.
+          D.validateRemoveSpecial(data, p.id).ok
+            ? `<button class="btn btn--sm btn--danger" data-sdel="${e(p.id)}" type="button"
+                 title="Remove ${e(p.name)} completely">Remove</button>`
+            : ""
+        }
         <span class="faint" style="flex-basis:100%">${
           team
             ? `Playing for <b>${e(team.name)}</b> — free, and doesn't use one of their ${
@@ -277,6 +288,29 @@ function paintSpecials() {
       })
       .join("")
   );
+}
+
+/** The add-a-guest row. Selects are rebuilt in step with the team names. */
+function paintNewSpecial(teams) {
+  const posSel = $("#newSpecialPos");
+  const teamSel = $("#newSpecialTeam");
+  const keepPos = posSel.value;
+  const keepTeam = teamSel.value;
+
+  setHTML(
+    posSel,
+    D.POSITIONS.map(
+      (pos) => `<option value="${pos}">${e(D.POSITION_LABEL[pos])}</option>`
+    ).join("")
+  );
+  posSel.value = D.POSITIONS.includes(keepPos) ? keepPos : "MID";
+
+  setHTML(
+    teamSel,
+    `<option value="">— not playing yet —</option>` +
+      teams.map((t) => `<option value="${e(t.id)}">${e(t.name)}</option>`).join("")
+  );
+  if (teams.some((t) => t.id === keepTeam)) teamSel.value = keepTeam;
 }
 
 function paintJerseys() {
@@ -436,8 +470,60 @@ function wire() {
     }
   });
 
+  // A guest who turned up on the day — added straight into a team, for free.
+  $("#addSpecial").addEventListener("click", async () => {
+    const nameEl = $("#newSpecialName");
+    const name = nameEl.value.trim();
+    const pos = $("#newSpecialPos").value;
+    const teamId = $("#newSpecialTeam").value || null;
+
+    const res = D.validateNewSpecial(data, name, pos, teamId);
+    if (!res.ok) return toast(res.error, "err");
+
+    const id = D.nextSpecialId(data);
+    try {
+      await writeMany({
+        [`players/${id}`]: { id, name, pos, teamId, price: 0, special: true },
+      });
+      const team = D.teamById(data, teamId);
+      toast(
+        team
+          ? `${name} added to ${team.name} — free, and outside the squad limits.`
+          : `${name} added. Pick a team when you know who they are playing for.`
+      );
+      nameEl.value = "";
+      nameEl.focus();
+      if (teamId) justBought = teamId;
+    } catch (err) {
+      toast(`Could not save: ${err.message}`, "err");
+    }
+  });
+
+  // Enter in the name box adds the guest, so this is a one-handed job.
+  $("#newSpecialName").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      $("#addSpecial").click();
+    }
+  });
+
   // Special players — name, position and which team they turn out for.
   $("#specialList").addEventListener("click", async (ev) => {
+    const del = ev.target.closest("[data-sdel]");
+    if (del) {
+      const p = D.playerById(data, del.dataset.sdel);
+      const res = D.validateRemoveSpecial(data, del.dataset.sdel);
+      if (!res.ok) return toast(res.error, "err");
+      if (!confirm(`Remove ${p.name} from the tournament completely?`)) return;
+      try {
+        await writeMany({ [`players/${p.id}`]: null });
+        toast(`${p.name} removed.`);
+      } catch (err) {
+        toast(`Could not save: ${err.message}`, "err");
+      }
+      return;
+    }
+
     const b = ev.target.closest("[data-ssave]");
     if (!b) return;
     const id = b.dataset.ssave;

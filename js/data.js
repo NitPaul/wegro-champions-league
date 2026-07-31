@@ -1176,6 +1176,78 @@ export function validateSpecial(data, playerId, teamId) {
   return { ok: true, error: null };
 }
 
+/**
+ * The next free special-player id.
+ *
+ * Scans for a gap rather than counting, so removing s2 and adding another guest
+ * reuses s2 instead of colliding with s3 — the seeded pool numbers `p01…` and
+ * the specials `s1…` precisely so these two sequences can never meet.
+ */
+export function nextSpecialId(data) {
+  const used = new Set(playersList(data).map((p) => p.id));
+  let n = 1;
+  while (used.has(`s${n}`)) n++;
+  return `s${n}`;
+}
+
+/**
+ * Can a new guest be added under this name? Returns `{ ok, error }`.
+ *
+ * The duplicate-name check is the one that matters on the day: the referee picks
+ * a scorer from a list of names, so two players called "Rahim" on the same pitch
+ * means goals land on whichever one happens to be first.
+ */
+export function validateNewSpecial(data, name, pos, teamId) {
+  const nm = String(name || "").trim();
+  if (!nm) return { ok: false, error: "A guest player needs a name." };
+  if (nm.length > 40) return { ok: false, error: "That name is too long — 40 characters at most." };
+  if (!POSITIONS.includes(pos)) return { ok: false, error: "Pick a position." };
+  if (teamId && !teamById(data, teamId)) return { ok: false, error: "Pick a team." };
+
+  const clash = playersList(data).find(
+    (p) => String(p.name || "").trim().toLowerCase() === nm.toLowerCase()
+  );
+  if (clash)
+    return {
+      ok: false,
+      error: `There is already a player called ${clash.name}. Add a surname or an initial so the referee can tell them apart.`,
+    };
+
+  return { ok: true, error: null };
+}
+
+/** How many logged match events name this player, in any role. */
+export const playerEventCount = (data, playerId) =>
+  playerId
+    ? allEvents(data).filter(
+        (ev) =>
+          ev.scorerId === playerId || ev.assistId === playerId || ev.playerId === playerId
+      ).length
+    : 0;
+
+/**
+ * Can this special player be deleted outright? Returns `{ ok, error }`.
+ *
+ * Blocked once they appear in the match log, because deleting the player would
+ * leave those events pointing at nobody — the goal would stay on the scoreboard
+ * with no scorer. Take them off the team instead; that keeps the history intact.
+ */
+export function validateRemoveSpecial(data, playerId) {
+  const player = playerById(data, playerId);
+  if (!player) return { ok: false, error: "Unknown player." };
+  if (!isSpecial(player))
+    return { ok: false, error: `${player.name} is an auction player — unsell them instead.` };
+  const n = playerEventCount(data, playerId);
+  if (n)
+    return {
+      ok: false,
+      error: `${player.name} is in the match log (${n} event${
+        n === 1 ? "" : "s"
+      }). Set them to "not playing" instead — deleting them would leave those events with no player.`,
+    };
+  return { ok: true, error: null };
+}
+
 /** Auction progress across all teams. */
 export function auctionProgress(data) {
   const players = auctionPlayers(data);

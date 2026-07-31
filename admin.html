@@ -187,17 +187,34 @@
               <div id="poolList" class="pool"></div>
             </div>
 
-            <div class="card" id="specialCard" hidden>
+            <div class="card" id="specialCard">
               <div class="spread">
                 <h3 class="card__title" style="margin: 0">Special players</h3>
                 <span class="faint">Free guests — no budget, no squad slot, no position limit</span>
               </div>
               <div class="hr"></div>
+
+              <div class="add-special">
+                <div class="add-special__head">
+                  <b>A guest turned up?</b>
+                  <span class="faint">Add them here and they can play straight away.</span>
+                </div>
+                <div class="add-special__row">
+                  <input class="input nm" id="newSpecialName" type="text" maxlength="40"
+                         placeholder="Guest player's name" aria-label="New guest player name" />
+                  <select class="input pos" id="newSpecialPos" aria-label="New guest player position"></select>
+                  <select class="input tm" id="newSpecialTeam" aria-label="New guest player team"></select>
+                  <button class="btn btn--primary" id="addSpecial" type="button">Add player</button>
+                </div>
+              </div>
+
               <div id="specialList" class="special-list"></div>
               <p class="faint" style="margin: 10px 0 0">
                 Assign one to any team at any time, including on match day, and move or
                 remove them again just as freely. They never affect a captain's 100 BDT
-                or a squad's legality.
+                or a squad's legality. Once a guest is on a team, the referee console
+                lists them alongside the squad, so they can score and be credited
+                exactly like anyone else.
               </p>
             </div>
 

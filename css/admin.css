@@ -292,6 +292,48 @@
 }
 
 /* ---- Special players ------------------------------------------------------ */
+.add-special {
+  padding: 11px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  border: 1px solid rgba(232, 195, 92, 0.32);
+}
+.add-special__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-bottom: 9px;
+}
+.add-special__row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.add-special__row .nm {
+  flex: 1 1 150px;
+  min-width: 100px;
+}
+.add-special__row .pos {
+  flex: 0 0 auto;
+  width: 132px;
+}
+.add-special__row .tm {
+  flex: 1 1 150px;
+  min-width: 110px;
+}
+@media (max-width: 620px) {
+  .add-special__row .nm,
+  .add-special__row .pos,
+  .add-special__row .tm,
+  .add-special__row .btn {
+    flex: 1 1 100%;
+    width: auto;
+  }
+}
+
 .special-list {
   display: grid;
   gap: 10px;
