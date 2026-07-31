@@ -413,22 +413,28 @@ There are two ways in, and the login screen offers both:
 | | Best for |
 |---|---|
 | **Sign in with Google** | You. No password exists to leak or forget, and it inherits your Google 2FA. |
-| **Email + password** | A shared "tournament account" you can hand to someone else, no Google account needed. |
+| **Email + password** | Anyone without a usable Google account on their work address. |
 
-### Setting up the shared email account
+**As set up for 2026:** the organiser signs in with Google; the referee has his own
+email + password account (`faquid@wegro.global`), with the Danger tab hidden — see below.
+
+### Setting up an email + password account
 
 In Firebase: **Authentication → Sign-in method → Email/Password → Enable**, then
-**Users → Add user** with the address and password you intend to share.
+**Users → Add user** with the address and a password you give that person directly.
 
-**Use an address that is not any admin's Google address.** Firebase keeps one account per email,
+Note that enabling the *provider* is a different switch from **Settings → User actions → Enable
+create (sign-up)**, which should stay **off**. That one only controls public self-signup; adding
+users from the console still works with it disabled.
+
+**Prefer one account per person over one shared password.** The admin header shows whoever is
+signed in, so the record of who changed what is real, and removing someone later means deleting one
+UID rather than changing a password everybody uses.
+
+**Use an address that is not also signing in with Google.** Firebase keeps one account per email,
 so the same address on both providers collides with `auth/account-exists-with-different-credential`.
-A dedicated address like `tournament@…` avoids it entirely.
 
 Then add that account's UID to `ADMIN_UIDS` and re-publish the rules (steps 2–4 below).
-
-Worth knowing about a shared password: everyone using it shows up as the same person, so the
-tournament can't tell who changed what, and taking access away from one person means changing the
-password for everybody. For a scoreboard that's a fine trade — just make it a deliberate one.
 
 ### Adding anyone (either method)
 
@@ -449,6 +455,30 @@ password for everybody. For a scoreboard that's a fine trade — just make it a 
 Always use the generator rather than hand-editing the rules. Two places have to agree on who the
 admin is, and when they drift you get the confusing failure where the panel opens but nothing
 saves.
+
+### Hiding the Danger tab from someone
+
+An admin who is there to run the scoreboard — the referee, say — has no reason to be one tap away
+from **Clear scores**, **Reset the auction** or **Restore from a file**. Put their UID in a second
+list in `js/config.js`:
+
+```js
+export const SCOREBOARD_ONLY_UIDS = ["their-uid"];
+```
+
+The **Danger** tab then disappears for that account: not just the panel, but the tab itself, and
+arrow-key navigation skips over it. If the browser remembers Danger as their last-used tab from an
+earlier session, they land on Auction instead. Everything else is unchanged — they can run the
+auction, the clock, goals, settings and the medals exactly as before.
+
+**Be clear about what this is.** It hides a screen; it does not remove a permission. Realtime
+Database rules can only see a UID — there is no role in the token to check — so every admin has the
+same write access as far as the server is concerned, and a determined person with devtools could
+still issue those writes. It stops an accident, not intent. Anyone you would not trust with a reset
+should not be in `ADMIN_UIDS` at all.
+
+Note the Danger tab also holds **Download backup**, which is harmless. Hiding the tab takes that
+with it, so backups stay the organiser's job.
 
 To remove someone, delete their UID from `ADMIN_UIDS`, re-run the generator, re-publish, redeploy.
 They lose access immediately — the database stops accepting their writes the moment you publish,
@@ -621,6 +651,9 @@ Work down this list once. Everything above the line must be done **before the au
 - [ ] One practice run: set a match Live, save a score, log a goal, then **Clear** it
 - [ ] Two minutes with the referee on a real phone: log one of each — goal, critical goal, save,
       clearance, shot, chance — then remove them all again
+- [ ] The referee has signed in **on his own phone** with his email and password, seen the admin
+      screen (not the padlock), and saved one change that stuck — do this the day before, not at
+      3:55 PM. His account has no **Danger** tab; that is deliberate.
 
 **During the tournament**
 

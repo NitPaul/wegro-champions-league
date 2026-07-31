@@ -4,7 +4,7 @@
     ".write": false,
     "wegro": {
       ".read": true,
-      ".write": "auth != null && (auth.uid === 'w5ueQU809vW0lhEnpKlosnesesC2')"
+      ".write": "auth != null && (auth.uid === 'w5ueQU809vW0lhEnpKlosnesesC2' || auth.uid === 'JealmZImVpYl0MN5ERLplA5s7PT2')"
     }
   }
 }

@@ -35,13 +35,17 @@ export function wireTabs(tabsEl, { onChange } = {}) {
   });
 
   tabsEl.addEventListener("keydown", (e) => {
-    const i = tabs.indexOf(document.activeElement);
+    // Navigate only the visible tabs. A tab can be hidden for the signed-in
+    // account (Danger, for a scoreboard-only admin), and arrowing onto it would
+    // open the very panel we took away.
+    const usable = tabs.filter((t) => !t.hidden);
+    const i = usable.indexOf(document.activeElement);
     if (i < 0) return;
     const next =
-      e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? tabs.length - 1 : null;
+      e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? usable.length - 1 : null;
     if (next === null) return;
     e.preventDefault();
-    const t = tabs[(next + tabs.length) % tabs.length];
+    const t = usable[(next + usable.length) % usable.length];
     t.focus();
     select(t);
   });
@@ -51,7 +55,7 @@ export function wireTabs(tabsEl, { onChange } = {}) {
 
   return (name) => {
     const t = tabs.find((x) => x.id === `tab-${name}`);
-    if (t) select(t);
+    if (t && !t.hidden) select(t);
   };
 }
 

@@ -24,7 +24,13 @@
      currentUser()             -> user|null
    ========================================================================== */
 
-import { firebaseConfig, DB_PATH, DEMO_PASSPHRASE, ADMIN_UIDS } from "./config.js";
+import {
+  firebaseConfig,
+  DB_PATH,
+  DEMO_PASSPHRASE,
+  ADMIN_UIDS,
+  SCOREBOARD_ONLY_UIDS,
+} from "./config.js";
 
 const SDK = "https://www.gstatic.com/firebasejs/10.12.5";
 
@@ -285,6 +291,10 @@ export function isAdmin(user) {
 
 /** True while ADMIN_UIDS has not been filled in yet. */
 export const needsUidSetup = () => !isDemo && !ADMIN_UIDS.length;
+
+/** Is this a scoreboard-only admin — same access, no Danger tab? */
+export const isScoreboardOnly = (user) =>
+  Boolean(user) && SCOREBOARD_ONLY_UIDS.includes(user.uid);
 
 export async function signOutAdmin() {
   if (isDemo) {

@@ -18,6 +18,7 @@ import {
   signOutAdmin,
   isDemo,
   isAdmin,
+  isScoreboardOnly,
   needsUidSetup,
   friendlyError,
 } from "./backend.js";
@@ -74,6 +75,7 @@ onAuth((user) => {
   }
 
   $("#whoami").textContent = user.email || "Signed in";
+  applyDangerVisibility(user);
 
   // First run: surface the UID so it can be pasted into config and rules.
   show($("#uidSetup"), needsUidSetup());
@@ -81,6 +83,25 @@ onAuth((user) => {
 
   render();
 });
+
+/**
+ * Take the Danger tab away from a scoreboard-only admin.
+ *
+ * Deliberately driven off the DOM rather than calling `selectTab`: in demo mode
+ * `onAuth` fires while this module is still evaluating, before the tab strip
+ * further down has been wired, so touching that binding from here would be a
+ * temporal-dead-zone crash. A click goes through the delegated handler and is
+ * safe whenever it happens.
+ *
+ * Auth resolves after `rememberTab` has already restored the last-used tab, so
+ * Danger may be the open panel by the time we get here — hence the bounce.
+ */
+function applyDangerVisibility(user) {
+  const tab = $("#tab-danger");
+  const restricted = isScoreboardOnly(user);
+  show(tab, !restricted);
+  if (restricted && tab.getAttribute("aria-selected") === "true") $("#tab-auction").click();
+}
 
 const loginError = (ex, method) => {
   const err = $("#loginErr");

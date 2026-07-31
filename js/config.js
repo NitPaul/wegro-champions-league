@@ -46,7 +46,26 @@ export const firebaseConfig = {
  * This list controls the admin *screen*. What actually protects the data is the
  * matching UID in the database rules, which Google's servers enforce.
  */
-export const ADMIN_UIDS = ["w5ueQU809vW0lhEnpKlosnesesC2"];
+export const ADMIN_UIDS = [
+  "w5ueQU809vW0lhEnpKlosnesesC2", // organiser — Google sign-in
+  "JealmZImVpYl0MN5ERLplA5s7PT2", // referee, faquid@wegro.global — email + password
+];
+
+/**
+ * Admins who run the scoreboard but not the tournament.
+ *
+ * They get the same console minus the **Danger** tab, so resets and
+ * restore-from-backup are not sitting one tap away from the referee during a
+ * match.
+ *
+ * Be clear about what this is: it hides a screen, it does not remove a
+ * permission. Every UID in `ADMIN_UIDS` has identical write access as far as
+ * the database rules are concerned, because Realtime Database rules can only
+ * see the UID — there is no role in the token to check. So this stops an
+ * accident, not a determined person. Anyone you would not trust with a reset
+ * should not be in `ADMIN_UIDS` at all.
+ */
+export const SCOREBOARD_ONLY_UIDS = ["JealmZImVpYl0MN5ERLplA5s7PT2"];
 
 /** Where the tournament lives in the database. Change the season to run 2027. */
 export const DB_PATH = "wegro/cl2026";
