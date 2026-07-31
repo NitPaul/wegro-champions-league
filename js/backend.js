@@ -301,12 +301,21 @@ export function currentUser() {
   return fb?.auth?.currentUser ?? null;
 }
 
-/** Turn a Firebase error into something a human can act on. */
-export function friendlyError(err) {
+/**
+ * Turn a Firebase error into something a human can act on.
+ *
+ * `method` is "google" or "email" when the error came from a sign-in attempt.
+ * Both methods raise the same `operation-not-allowed` code when their provider
+ * is switched off, and naming the wrong one sends whoever is stuck on match day
+ * hunting the wrong toggle.
+ */
+export function friendlyError(err, method = "") {
   const code = err?.code || "";
   if (code.includes("wrong-password") || code.includes("invalid-credential"))
     return "Wrong email or password.";
   if (code.includes("user-not-found")) return "No admin account with that email.";
+  if (code.includes("user-disabled"))
+    return "That account has been switched off in the Firebase console.";
   if (code.includes("invalid-email")) return "That doesn't look like an email address.";
   if (code.includes("too-many-requests"))
     return "Too many attempts. Wait a minute and try again.";
@@ -314,8 +323,11 @@ export function friendlyError(err) {
   // The two you hit when js/config.js is wrong, rather than the password.
   if (code.includes("api-key-not-valid") || code.includes("invalid-api-key"))
     return "The Firebase apiKey in js/config.js is not valid — re-copy it from the Firebase console.";
-  if (code.includes("configuration-not-found") || code.includes("operation-not-allowed"))
-    return "Google sign-in is not enabled for this Firebase project. Turn it on under Authentication → Sign-in method.";
+  if (code.includes("configuration-not-found") || code.includes("operation-not-allowed")) {
+    const which =
+      method === "email" ? "Email/Password" : method === "google" ? "Google" : "That";
+    return `${which} sign-in is not enabled for this Firebase project. Turn it on under Authentication → Sign-in method.`;
+  }
   // The one that only shows up in production: Firebase allows localhost by
   // default but not your Netlify domain until you add it.
   if (code.includes("unauthorized-domain"))

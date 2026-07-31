@@ -82,9 +82,9 @@ onAuth((user) => {
   render();
 });
 
-const loginError = (ex) => {
+const loginError = (ex, method) => {
   const err = $("#loginErr");
-  err.textContent = friendlyError(ex);
+  err.textContent = friendlyError(ex, method);
   show(err, true);
 };
 
@@ -95,7 +95,7 @@ $("#googleBtn").addEventListener("click", async () => {
   try {
     await signInWithGoogle();
   } catch (ex) {
-    loginError(ex);
+    loginError(ex, "google");
   } finally {
     btn.disabled = false;
   }
@@ -113,7 +113,7 @@ $("#loginForm").addEventListener("submit", async (ev) => {
     else await signInWithEmail($("#email").value, $("#password").value);
     $("#password").value = "";
   } catch (ex) {
-    loginError(ex);
+    loginError(ex, isDemo ? "" : "email");
   } finally {
     btn.disabled = false;
     btn.textContent = label;
